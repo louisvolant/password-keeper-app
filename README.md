@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Password Keeper App
 
 Ce projet est une application de gestion de mots de passe.
@@ -58,3 +59,7 @@ Pour lancer le frontend, exécutez :
 cd frontend
 npm run dev
 ```
+=======
+# password-keeper-app
+Password-encoded keeper app
+>>>>>>> origin/master
