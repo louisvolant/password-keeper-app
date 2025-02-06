@@ -4,12 +4,11 @@ const router = express.Router();
 const supabase = require('../config/supabase');
 const authenticateUser = require('../middleware/auth');
 
+const TABLE_USER_CONTENT = "usercontent";
 
-
-// Route de login
+// Login route
 router.post('/login', async (req, res) => {
   const { username, hashedpassword } = req.body;
-  console.log({ username, hashedpassword });
 
   try {
     const { data, error } = await supabase
@@ -19,61 +18,100 @@ router.post('/login', async (req, res) => {
       .eq('hashedpassword', hashedpassword)
       .single();
 
-    console.log('Supabase response:', { data, error });
-
     if (error || !data) {
-      return res.status(401).json({ success: false, error: 'Identifiants invalides' });
-    } else if (data.username === username && data.hashedpassword === hashedpassword) {
-        req.session.user = { id: 1, username: username };
-        res.json({ success: true });
+      return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
-    else {
-      return res.status(401).json({ error: 'Erreur de création de session' });
-    }
+
+    // Store user in session
+    req.session.user = { id: data.id, username: username };
+
+    // ⛔ DO NOT use `res.cookie()` here, express-session already handles `connect.sid`
+    res.json({ success: true });
   } catch (error) {
-    console.log('Erreur : ' + error);
-    res.status(500).json({ error: 'Erreur serveur' });
+    console.error('Server error:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
-// Route pour récupérer le contenu
+// Route to retrieve content
 router.get('/getcontent', authenticateUser, async (req, res) => {
   try {
-    const { data, error } = await supabase
-      .from('contents')
+    let { data, error } = await supabase
+      .from(TABLE_USER_CONTENT)
       .select('encodedContent')
       .eq('user_id', req.user.id)
       .single();
 
-    if (error) {
-      return res.status(404).json({ error: 'Contenu non trouvé' });
+    if (error || !data) {
+      // 🛠️ Insert empty content
+      const { error: insertError } = await supabase
+        .from(TABLE_USER_CONTENT)
+        .insert([{ user_id: req.user.id, encodedContent: '' }]);
+
+      if (insertError) {
+        console.error('Insert error:', insertError);
+        return res.status(500).json({ error: 'Error creating content' });
+      }
+
+      return res.json({ encodedContent: '' });
     }
 
-    res.json({ encodedContent: data?.encodedContent || '' });
+    res.json({ encodedContent: data.encodedContent });
   } catch (error) {
-    res.status(500).json({ error: 'Erreur serveur' });
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
-// Route pour mettre à jour le contenu
+// Route to update content
 router.post('/updatecontent', authenticateUser, async (req, res) => {
   const { encodedContent } = req.body;
 
   try {
-    const { error } = await supabase
-      .from('contents')
-      .upsert({
-        user_id: req.user.id,
-        encodedContent: encodedContent
-      });
+    // First, check if a record exists
+    const { data: existingContent } = await supabase
+      .from(TABLE_USER_CONTENT)
+      .select('*')
+      .eq('user_id', req.user.id)
+      .single();
 
-    if (error) {
-      return res.status(500).json({ error: 'Erreur de sauvegarde' });
+    let result;
+
+    if (existingContent) {
+      // Update if record exists
+      result = await supabase
+        .from(TABLE_USER_CONTENT)
+        .update({
+          encodedContent: encodedContent,  // Make sure column name matches your schema
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', req.user.id);
+    } else {
+      // Create if record doesn't exist
+      result = await supabase
+        .from(TABLE_USER_CONTENT)
+        .insert({
+          user_id: req.user.id,
+          encoded_content: encodedContent,  // Make sure column name matches your schema
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+    }
+
+    if (result.error) {
+      console.error('Supabase error:', result.error);
+      return res.status(500).json({
+        error: 'Save error',
+        details: result.error.message
+      });
     }
 
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: 'Erreur serveur' });
+    console.error('Server error:', error);
+    res.status(500).json({
+      error: 'Server error',
+      details: error.message
+    });
   }
 });
 
@@ -88,27 +126,6 @@ router.get('/test-users', async (req, res) => {
     res.json({ data, error });
   } catch (error) {
     console.log('Test error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.post('/create-test-user', async (req, res) => {
-  try {
-    const testUser = {
-      username: 'testuser',
-      hashedpassword: '1234567890', // Mettez ici le hash que vous utilisez pour tester
-      email: 'test@test.com'
-    };
-
-    const { data, error } = await supabase
-      .from('users')
-      .insert([testUser])
-      .select();
-
-    console.log('Create user result:', { data, error });
-    res.json({ data, error });
-  } catch (error) {
-    console.log('Create user error:', error);
     res.status(500).json({ error: error.message });
   }
 });

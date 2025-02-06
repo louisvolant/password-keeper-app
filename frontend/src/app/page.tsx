@@ -11,14 +11,20 @@ export default function HomePage() {
   const [content, setContent] = useState<string>('');
   const [error, setError] = useState<string>('');
 
-  const handleLoginSuccess = async (newToken: string) => {
-    setToken(newToken);
+  const handleLoginSuccess = async () => {
     try {
-      const { encodedContent } = await getContent(newToken);
+      const { encodedContent } = await getContent();
       setContent(encodedContent || '');
+      setToken('authenticated'); // Mark user as logged in
     } catch (error) {
-      setError('Erreur lors de la récupération du contenu');
+      setError('Error retrieving content');
     }
+  };
+
+  const handleLogout = () => {
+    setToken('');
+    setContent('');
+    // Optional: call logout API if needed
   };
 
   return (
@@ -32,6 +38,7 @@ export default function HomePage() {
         <ContentEditor
           token={token}
           initialContent={content}
+          onLogout={handleLogout}
         />
       )}
       {error && (

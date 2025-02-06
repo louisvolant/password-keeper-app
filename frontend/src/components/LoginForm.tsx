@@ -20,9 +20,9 @@ export const LoginForm = ({ onSuccess, onError }: LoginFormProps) => {
     try {
       const hashedPassword = hashPassword(password);
       const { token } = await login(username, hashedPassword);
-      onSuccess(token);
+      onSuccess();
     } catch (error) {
-      onError('Identifiants invalides');
+      onError('Invalid credentials');
     }
   };
 
@@ -32,18 +32,18 @@ export const LoginForm = ({ onSuccess, onError }: LoginFormProps) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             type="text"
-            placeholder="Nom d'utilisateur"
+            placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
           />
           <Input
             type="password"
-            placeholder="Mot de passe"
+            placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
           <Button type="submit" className="w-full">
-            Se connecter
+            Login
           </Button>
         </form>
       </CardContent>
