@@ -15,8 +15,8 @@ interface ContentEditorProps {
 
 export const ContentEditor = ({ token, initialContent, onLogout }: ContentEditorProps) => {
   const [secretKey, setSecretKey] = useState('');
-  const [content, setContent] = useState('');
-  const [isContentLoaded, setIsContentLoaded] = useState(false);
+  const [content, setContent] = useState(initialContent || '');
+  const [isContentLoaded, setIsContentLoaded] = useState(initialContent !== '');
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -66,8 +66,12 @@ export const ContentEditor = ({ token, initialContent, onLogout }: ContentEditor
           setMessage('Invalid key');
         }
       }
-    } catch (error) {
-      setMessage('Error loading content');
+    } catch (err) {
+        if (err instanceof Error) {
+          setMessage('Error loading content: ${err.message}');
+        } else {
+          setMessage('An unknown error occurred.');
+        }
     } finally {
       setIsLoading(false);
     }
@@ -85,8 +89,18 @@ export const ContentEditor = ({ token, initialContent, onLogout }: ContentEditor
       await updateContent(token, encrypted);
       setMessage('Content saved successfully');
       setSaveSuccess(true);
-    } catch (error: any) {
-      setMessage(error.response?.data?.error || 'Error saving content');
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setMessage(error.message || 'Error saving content');
+        console.error("Save error:", error);
+      } else if (typeof error === 'object' && error !== null && 'response' in error) {
+        const axiosError = error as { response: { data: { error: string } } };
+        setMessage(axiosError.response.data.error || 'Error saving content');
+        console.error("Save error details:", axiosError.response.data);
+      } else {
+        setMessage('An unknown error occurred during save.');
+        console.error("Save error:", error);
+      }
     } finally {
       setIsLoading(false);
     }

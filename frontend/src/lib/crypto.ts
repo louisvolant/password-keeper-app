@@ -16,7 +16,7 @@ export const decryptContent = (encrypted: string, key: string): string | null =>
     const decrypted = bytes.toString(CryptoJS.enc.Utf8);
     if (!decrypted) throw new Error('Invalid key');
     return decrypted;
-  } catch (error) {
+  } catch {
     return null;
   }
 };

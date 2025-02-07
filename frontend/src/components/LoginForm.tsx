@@ -7,7 +7,7 @@ import { hashPassword } from '@/lib/crypto';
 import { login } from '@/lib/api';
 
 interface LoginFormProps {
-  onSuccess: (token: string) => void;
+  onSuccess: () => void;
   onError: (message: string) => void;
 }
 
@@ -15,16 +15,20 @@ export const LoginForm = ({ onSuccess, onError }: LoginFormProps) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const hashedPassword = hashPassword(password);
-      const { token } = await login(username, hashedPassword);
-      onSuccess();
-    } catch (error) {
-      onError('Invalid credentials');
-    }
-  };
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      try {
+        const hashedPassword = hashPassword(password);
+        await login(username, hashedPassword);
+        onSuccess();
+      } catch (err) {
+        if (err instanceof Error) {
+          onError('Invalid credentials: ${err.message}');
+        } else {
+          onError('Invalid credentials.');
+        }
+      }
+    };
 
   return (
     <Card>

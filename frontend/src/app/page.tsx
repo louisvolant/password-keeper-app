@@ -15,9 +15,13 @@ export default function HomePage() {
     try {
       const { encodedContent } = await getContent();
       setContent(encodedContent || '');
-      setToken('authenticated'); // Mark user as logged in
-    } catch (error) {
-      setError('Error retrieving content');
+      setToken('authenticated');
+    } catch (err) {
+     if (err instanceof Error) {
+       setError('Error retrieving content: ${err.message}');
+     } else {
+       setError('Error retrieving content.');
+     }
     }
   };
 
