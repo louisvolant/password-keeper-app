@@ -15,6 +15,16 @@ export const login = async (username: string, password: string) => {
   return response.data;
 };
 
+export const checkAuth = async () => {
+    const response = await api.get('/api/check-auth', { withCredentials: true });
+    return response.data;
+};
+
+export const logout = async () => {
+  const response = await api.post('/api/logout', null, { withCredentials: true });
+  return response.data;
+};
+
 export const getContent = async () => {
   const response = await api.get('/api/getcontent', { withCredentials: true });
   return response.data;

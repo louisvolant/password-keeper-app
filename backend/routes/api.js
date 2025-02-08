@@ -25,8 +25,10 @@ router.post('/login', async (req, res) => {
       .eq('hashedpassword', hashedPassword)
       .single();
 
-    if (error || !data) {
-      return res.status(401).json({ success: false, error: 'Invalid credentials' });
+    if (!data) {
+          return res.json({ success: false, error: 'Invalid credentials' });
+    } else if (error) {
+      return res.status(401).json({ success: false, error: 'Error in calling Login function' });
     } else {
         // Store user in session
         req.session.user = { id: data.id, username: username };
@@ -39,6 +41,26 @@ router.post('/login', async (req, res) => {
     console.error('Server error:', error);
     res.status(500).json({ success: false, error: 'Server error' });
   }
+});
+
+router.get('/check-auth', (req, res) => {
+    if (req.session.user) {
+        res.json({ isAuthenticated: true });
+    } else {
+        res.json({ isAuthenticated: false });
+    }
+});
+
+router.post('/logout', (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Logout error:", err);
+      res.status(500).json({ error: 'Logout failed' });
+    } else {
+      res.clearCookie('connect.sid'); // Clear the session cookie
+      res.json({ success: true });
+    }
+  });
 });
 
 // Route to retrieve content
