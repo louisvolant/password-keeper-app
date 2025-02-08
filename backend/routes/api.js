@@ -1,35 +1,43 @@
-// routes/api.js
 const express = require('express');
 const router = express.Router();
 const supabase = require('../config/supabase');
 const authenticateUser = require('../middleware/auth');
+const crypto = require('crypto');
 
 const TABLE_USER_CONTENT = "usercontent";
 
+const hashPassword = (password) => {
+  const salt = process.env.SALT_SHA_256_HASHING;
+  return crypto.createHash('sha256').update(password + salt).digest('hex');
+};
+
 // Login route
 router.post('/login', async (req, res) => {
-  const { username, hashedpassword } = req.body;
+  const { username, password } = req.body;
 
   try {
+    const hashedPassword = hashPassword(password);
+    // console.log("HashPassword : " + hashedPassword);
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('username', username)
-      .eq('hashedpassword', hashedpassword)
+      .eq('hashedpassword', hashedPassword)
       .single();
 
     if (error || !data) {
       return res.status(401).json({ success: false, error: 'Invalid credentials' });
+    } else {
+        // Store user in session
+        req.session.user = { id: data.id, username: username };
+
+        // DO NOT use `res.cookie()` here, express-session already handles `connect.sid`
+        res.json({ success: true });
     }
 
-    // Store user in session
-    req.session.user = { id: data.id, username: username };
-
-    // ⛔ DO NOT use `res.cookie()` here, express-session already handles `connect.sid`
-    res.json({ success: true });
   } catch (error) {
     console.error('Server error:', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ success: false, error: 'Server error' });
   }
 });
 

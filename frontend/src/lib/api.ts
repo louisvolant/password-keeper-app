@@ -6,10 +6,10 @@ const api = axios.create({
   withCredentials: true
 });
 
-export const login = async (username: string, hashedPassword: string) => {
+export const login = async (username: string, password: string) => {
   const response = await api.post(
     '/api/login',
-    { username, hashedpassword: hashedPassword },
+    { username, password },
     { withCredentials: true }
   );
   return response.data;

@@ -1,11 +1,6 @@
 // src/lib/crypto.ts
 import CryptoJS from 'crypto-js';
 
-export const hashPassword = (password: string): string => {
-  const salt = process.env.SALT_SHA_256_HASHING;
-  return CryptoJS.SHA256(password + salt).toString();
-};
-
 export const encryptContent = (content: string, key: string): string => {
   return CryptoJS.AES.encrypt(content, key).toString();
 };

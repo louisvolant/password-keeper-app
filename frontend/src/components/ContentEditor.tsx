@@ -9,14 +9,14 @@ import { updateContent, getContent } from '@/lib/api';
 
 interface ContentEditorProps {
   token: string;
-  initialContent: string;
   onLogout: () => void;
+  initialContent: string;
 }
 
 export const ContentEditor = ({ token, initialContent, onLogout }: ContentEditorProps) => {
   const [secretKey, setSecretKey] = useState('');
   const [content, setContent] = useState(initialContent || '');
-  const [isContentLoaded, setIsContentLoaded] = useState(initialContent !== '');
+  const [isContentLoaded, setIsContentLoaded] = useState(false);
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -68,7 +68,7 @@ export const ContentEditor = ({ token, initialContent, onLogout }: ContentEditor
       }
     } catch (err) {
         if (err instanceof Error) {
-          setMessage('Error loading content: ${err.message}');
+          setMessage(`Error loading content: ${err.message}`);
         } else {
           setMessage('An unknown error occurred.');
         }

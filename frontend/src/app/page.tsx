@@ -12,16 +12,17 @@ export default function HomePage() {
   const [error, setError] = useState<string>('');
 
   const handleLoginSuccess = async () => {
+    setError(''); // Clear the error on successful login
     try {
       const { encodedContent } = await getContent();
       setContent(encodedContent || '');
       setToken('authenticated');
     } catch (err) {
-     if (err instanceof Error) {
-       setError('Error retrieving content: ${err.message}');
-     } else {
-       setError('Error retrieving content.');
-     }
+      if (err instanceof Error) {
+        setError(`Error retrieving content: ${err.message}`);
+      } else {
+        setError('Error retrieving content.');
+      }
     }
   };
 
@@ -37,6 +38,7 @@ export default function HomePage() {
         <LoginForm
           onSuccess={handleLoginSuccess}
           onError={setError}
+          clearError={() => setError('')}
         />
       ) : (
         <ContentEditor
