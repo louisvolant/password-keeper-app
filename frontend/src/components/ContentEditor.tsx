@@ -5,21 +5,25 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check, LogOut } from 'lucide-react';
 import { encryptContent, decryptContent } from '@/lib/crypto';
-import { updateContent, getContent } from '@/lib/api';
+import { updateContent, logout } from '@/lib/api';
 
 interface ContentEditorProps {
-  token: string;
   onLogout: () => void;
-  initialContent: string;
+  initialContent?: string;
 }
 
-export const ContentEditor = ({ token, initialContent, onLogout }: ContentEditorProps) => {
+export const ContentEditor = ({ onLogout, initialContent = '' }: ContentEditorProps) => {
   const [secretKey, setSecretKey] = useState('');
-  const [content, setContent] = useState(initialContent || '');
+  const [content, setContent] = useState('');
   const [isContentLoaded, setIsContentLoaded] = useState(false);
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [encodedContent, setEncodedContent] = useState(initialContent);
+
+    useEffect(() => {
+      setEncodedContent(initialContent);
+    }, [initialContent]);
 
   // Effect to hide success message after 5 seconds
   useEffect(() => {
@@ -43,7 +47,7 @@ export const ContentEditor = ({ token, initialContent, onLogout }: ContentEditor
     return () => clearTimeout(successTimeout);
   }, [saveSuccess]);
 
-  const loadContent = async () => {
+ const loadContent = async () => {
     if (!secretKey) {
       setMessage('Please enter a secret key');
       return;
@@ -51,7 +55,6 @@ export const ContentEditor = ({ token, initialContent, onLogout }: ContentEditor
 
     setIsLoading(true);
     try {
-      const { encodedContent } = await getContent();
       if (!encodedContent) {
         setContent('');
         setIsContentLoaded(true);
@@ -67,11 +70,11 @@ export const ContentEditor = ({ token, initialContent, onLogout }: ContentEditor
         }
       }
     } catch (err) {
-        if (err instanceof Error) {
-          setMessage(`Error loading content: ${err.message}`);
-        } else {
-          setMessage('An unknown error occurred.');
-        }
+      if (err instanceof Error) {
+        setMessage(`Error loading content: ${err.message}`);
+      } else {
+        setMessage('An unknown error occurred.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +89,7 @@ export const ContentEditor = ({ token, initialContent, onLogout }: ContentEditor
     setIsLoading(true);
     try {
       const encrypted = encryptContent(content, secretKey);
-      await updateContent(token, encrypted);
+      await updateContent(encrypted);
       setMessage('Content saved successfully');
       setSaveSuccess(true);
     } catch (error: unknown) {
@@ -103,6 +106,17 @@ export const ContentEditor = ({ token, initialContent, onLogout }: ContentEditor
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      onLogout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Still proceed with local logout even if API call fails
+      onLogout();
     }
   };
 
@@ -127,7 +141,7 @@ export const ContentEditor = ({ token, initialContent, onLogout }: ContentEditor
         </div>
         <Button
           variant="outline"
-          onClick={onLogout}
+          onClick={handleLogout}
           className="ml-4">
           <LogOut className="w-4 h-4 mr-2" />
           Logout

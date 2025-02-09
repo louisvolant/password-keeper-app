@@ -30,10 +30,9 @@ export const getContent = async () => {
   return response.data;
 };
 
-export const updateContent = async (token: string, encodedContent: string) => {
+export const updateContent = async (encodedContent: string) => {
   const response = await api.post('/api/updatecontent',
-    { encodedContent },
-    { headers: { Authorization: token } }
+    { encodedContent }
   );
   return response.data;
 };
