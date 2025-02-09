@@ -79,7 +79,6 @@ export const ContentEditor = ({ onLogout, initialContent = '' }: ContentEditorPr
       setIsLoading(false);
     }
   };
-
   const handleSave = async () => {
     if (!secretKey) {
       setMessage('Please enter a secret key');
@@ -88,10 +87,11 @@ export const ContentEditor = ({ onLogout, initialContent = '' }: ContentEditorPr
 
     setIsLoading(true);
     try {
-      const encrypted = encryptContent(content, secretKey);
-      await updateContent(encrypted);
+      const encryptedContent = encryptContent(content, secretKey);
+      await updateContent(encryptedContent); // This sends { encodedContent: encryptedContent }
       setMessage('Content saved successfully');
       setSaveSuccess(true);
+      setEncodedContent(encryptedContent);
     } catch (error: unknown) {
       if (error instanceof Error) {
         setMessage(error.message || 'Error saving content');
