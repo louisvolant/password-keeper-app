@@ -1,5 +1,5 @@
 // src/components/AutoResizeTextArea.tsx
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 
 interface AutoResizeTextAreaProps {
   value: string;
@@ -18,7 +18,7 @@ export const AutoResizeTextArea = ({
 }: AutoResizeTextAreaProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const adjustHeight = () => {
+  const adjustHeight = useCallback(() => {
     const textarea = textareaRef.current;
     if (textarea) {
       // Reset height to allow shrinking
@@ -27,12 +27,12 @@ export const AutoResizeTextArea = ({
       const newHeight = Math.max(textarea.scrollHeight, minHeight);
       textarea.style.height = `${newHeight}px`;
     }
-  };
+  }, [minHeight]);
 
   // Adjust height when value changes
   useEffect(() => {
     adjustHeight();
-  }, [value]);
+  }, [value, adjustHeight]);
 
   return (
     <textarea

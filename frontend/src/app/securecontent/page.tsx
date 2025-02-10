@@ -87,7 +87,6 @@ export default function SecureContentPage() {
       />
       <div className="container mx-auto p-4 max-w-2xl">
         <ContentEditor
-          onLogout={handleLogout}
           initialContent={encodedContent || ''}
         />
       </div>

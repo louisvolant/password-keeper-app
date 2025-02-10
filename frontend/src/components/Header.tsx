@@ -49,7 +49,7 @@ export const Header = ({ isAuthenticated, onLogout }: HeaderProps) => {
         </div>
         {isAuthenticated && (
           <Button
-            variant="ghost"
+            variant="default"
             onClick={handleLogout}
             className="text-white hover:text-white hover:bg-blue-700 dark:hover:bg-blue-900"
           >
