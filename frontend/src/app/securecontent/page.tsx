@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ContentEditor } from '@/components/ContentEditor';
 import { getContent } from '@/lib/api';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Header } from '@/components/Header';
 
 export default function SecureContentPage() {
   const router = useRouter();
@@ -48,18 +49,29 @@ export default function SecureContentPage() {
   const handleLogout = () => {
     // Clear the auth cookie
     document.cookie = 'auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    setIsAuthenticated(false);
     router.push('/');
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <>
+        <Header isAuthenticated={false} />
+        <div className="container mx-auto p-4">Loading...</div>
+      </>
+    );
   }
 
   if (error) {
     return (
-      <Alert>
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
+      <>
+        <Header isAuthenticated={false} />
+        <div className="container mx-auto p-4 max-w-2xl">
+          <Alert>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        </div>
+      </>
     );
   }
 
@@ -68,11 +80,17 @@ export default function SecureContentPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <ContentEditor
+    <>
+      <Header
+        isAuthenticated={isAuthenticated}
         onLogout={handleLogout}
-        initialContent={encodedContent || ''}
       />
-    </div>
+      <div className="container mx-auto p-4 max-w-2xl">
+        <ContentEditor
+          onLogout={handleLogout}
+          initialContent={encodedContent || ''}
+        />
+      </div>
+    </>
   );
 }
