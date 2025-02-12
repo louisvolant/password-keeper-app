@@ -35,7 +35,7 @@ export const Header = ({ isAuthenticated, onLogout }: HeaderProps) => {
   return (
     <header className="bg-blue-600 dark:bg-blue-800 text-white py-4">
       <div className="container mx-auto px-4 flex items-center justify-between">
-        <div className="flex items-center">
+        <Link href="/" className="flex items-center">
           <Image
             src="/icon_shield.svg"
             alt="Shield Tool Logo"
@@ -45,7 +45,7 @@ export const Header = ({ isAuthenticated, onLogout }: HeaderProps) => {
             className="h-8 w-8 mr-2"
           />
           <h1 className="text-2xl font-bold">Password Keeper</h1>
-        </div>
+        </Link>
 
         <nav className="flex items-center space-x-4"> {/* Navigation styling */}
           <Link href="/confidentiality-rules" className="hover:text-gray-200">
