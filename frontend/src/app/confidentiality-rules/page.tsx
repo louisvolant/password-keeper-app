@@ -24,7 +24,7 @@ export default function ConfidentialityRulesPage() {
           </ul>
 
           <p className="mb-4">
-            For more information, please contact us at [your contact email].
+            For more information, please contact us at contact [at] pioo.fr.
           </p>
         </div>
     </div>

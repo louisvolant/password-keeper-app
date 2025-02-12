@@ -22,7 +22,7 @@ export default function GeneralConditionsPage() {
           </ol>
 
           <p className="mb-4">
-            If you have any questions, please contact us at [your contact email].
+            If you have any questions, please contact us at contact [at] pioo.fr.
           </p>
         </div>
     </div>
