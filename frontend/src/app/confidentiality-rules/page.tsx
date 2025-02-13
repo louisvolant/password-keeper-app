@@ -2,8 +2,11 @@
 'use client';
 import { Header } from '@/components/Header';
 
+const domain = process.env.NEXT_PUBLIC_DOMAIN_URL;
 
 export default function ConfidentialityRulesPage() {
+  const contactEmail = `contact [at] ${domain}`; // Construct the email
+
   return (
       <div>
         <Header isAuthenticated={false} />
@@ -15,16 +18,14 @@ export default function ConfidentialityRulesPage() {
             confidentiality rules and how we handle your data.
           </p>
 
-          {/* Add your confidentiality rules here */}
           <ul className="list-disc pl-6 mb-4">
             <li>We do not share your personal information with third parties without your consent.</li>
             <li>Your data is encrypted and stored securely.</li>
             <li>We use your data only for the purpose of providing and improving our services.</li>
-            {/* ... more rules */}
           </ul>
 
           <p className="mb-4">
-            For more information, please contact us at contact [at] pioo.fr.
+            For more information, please contact us at {contactEmail}.
           </p>
         </div>
     </div>
