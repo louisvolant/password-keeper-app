@@ -11,17 +11,34 @@ const hashPassword = (password) => {
   return crypto.createHash('sha256').update(password + salt).digest('hex');
 };
 
+function cleanUsername(username) {
+  // Regular expression to allow only letters, numbers, hyphens, underscores, plus signs, and equals signs.
+  const regex = /^[a-zA-Z0-9-_+=]+$/;  // ^ and $ ensure the whole string is matched.
+  if (regex.test(username))  {
+      return username;
+  } else {
+      return null;
+  }
+}
+
+
 // Login route
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
   try {
+    const cleanedUsername = cleanUsername(username);
+
+    if (!cleanedUsername) {
+      return res.status(400).json({ success: false, error: 'Invalid username format. Only letters, numbers, hyphens, underscores, plus, and equals are allowed.' });
+    }
+
     const hashedPassword = hashPassword(password);
     // console.log("HashPassword : " + hashedPassword);
     const { data, error } = await supabase
       .from('users')
       .select('*')
-      .eq('username', username)
+      .ilike('username', username)
       .eq('hashedpassword', hashedPassword)
       .single();
 
