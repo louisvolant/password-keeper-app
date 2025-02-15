@@ -155,7 +155,7 @@ router.get('/getcontent', authenticateUser, async (req, res) => {
   try {
     let { data, error } = await supabase
       .from(TABLE_USER_CONTENT)
-      .select('encodedContent')
+      .select('encoded_content')
       .eq('user_id', req.user.id)
       .single();
 
@@ -163,17 +163,17 @@ router.get('/getcontent', authenticateUser, async (req, res) => {
       // 🛠️ Insert empty content
       const { error: insertError } = await supabase
         .from(TABLE_USER_CONTENT)
-        .insert([{ user_id: req.user.id, encodedContent: '' }]);
+        .insert([{ user_id: req.user.id, encoded_content: '' }]);
 
       if (insertError) {
         console.error('Insert error:', insertError);
         return res.status(500).json({ error: 'Error creating content' });
       }
 
-      return res.json({ encodedContent: '' });
+      return res.json({ encoded_content: '' });
     }
 
-    res.json({ encodedContent: data.encodedContent });
+    res.json({ encoded_content: data.encoded_content });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
@@ -181,7 +181,7 @@ router.get('/getcontent', authenticateUser, async (req, res) => {
 
 // Route to update content
 router.post('/updatecontent', authenticateUser, async (req, res) => {
-  const { encodedContent } = req.body;
+  const { encoded_content } = req.body;
 
   try {
     // First, check if a record exists
@@ -198,7 +198,7 @@ router.post('/updatecontent', authenticateUser, async (req, res) => {
       result = await supabase
         .from(TABLE_USER_CONTENT)
         .update({
-          encodedContent: encodedContent,  // Make sure column name matches your schema
+          encoded_content: encoded_content,  // Make sure column name matches your schema
           updated_at: new Date().toISOString()
         })
         .eq('user_id', req.user.id);
@@ -208,7 +208,7 @@ router.post('/updatecontent', authenticateUser, async (req, res) => {
         .from(TABLE_USER_CONTENT)
         .insert({
           user_id: req.user.id,
-          encoded_content: encodedContent,  // Make sure column name matches your schema
+          encoded_content: encoded_content,  // Make sure column name matches your schema
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });

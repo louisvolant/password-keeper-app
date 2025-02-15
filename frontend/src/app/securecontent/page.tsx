@@ -29,7 +29,7 @@ export default function SecureContentPage() {
 
         // If authenticated, fetch the content
         const content = await getContent();
-        setEncodedContent(content.encodedContent);
+        setEncodedContent(content.encoded_content);
         setIsAuthenticated(true);
       } catch (err) {
         if (err instanceof Error) {

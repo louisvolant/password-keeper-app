@@ -30,9 +30,9 @@ export const getContent = async () => {
   return response.data;
 };
 
-export const updateContent = async (encodedContent: string) => {
+export const updateContent = async (encoded_content: string) => {
   const response = await api.post('/api/updatecontent',
-    { encodedContent }
+    { encoded_content }
   );
   return response.data;
 };
