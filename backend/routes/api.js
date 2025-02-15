@@ -103,14 +103,14 @@ router.post('/login', async (req, res) => {
             req.session.user = { id: userData.id, username: username };
             return res.json({ success: true });
         } else {
-           console.log("userData.hashed_password:"+userData.hashed_password+" hashedPasswordOldMethod:"+hashedPasswordOldMethod)
+           console.log("userData.hashed_password:" + userData.hashed_password+" hashedPasswordOldMethod:" + hashedPasswordOldMethod)
         }
     } else if(userData.password_version === 1){
         console.log("Password version : 1");
         // Verify the password against the stored hash
         isValidPassword = await verifyPassword(password, userData.hashed_password);
     } else {
-        console.log("Not recognised Password version : " +userDatadata.password_version);
+        console.log("Not recognised Password version : " + userData.password_version);
     }
 
     console.log("isValidPassword value : " + isValidPassword);
@@ -119,7 +119,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Store user in session
-    req.session.user = { id: data.id, username: username };
+    req.session.user = { id: userData.id, username: username };
     res.json({ success: true });
 
 

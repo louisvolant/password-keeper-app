@@ -58,7 +58,7 @@ export const Header = ({ isAuthenticated, onLogout }: HeaderProps) => {
             <Button
               variant="default"
               onClick={handleLogout}
-              className="text-white hover:text-white hover:bg-blue-700 dark:hover:bg-blue-900"
+              className="flex items-center text-white hover:text-white hover:bg-blue-700 dark:hover:bg-blue-900"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Logout
