@@ -1,9 +1,19 @@
+//routes/file_tree_api.js
 const express = require('express');
 const router = express.Router();
 const supabase = require('../config/supabase');
 const authenticateUser = require('../middleware/auth');
 
 const TABLE_USER_FILE_TREE = "user_file_tree";
+
+// Route to retrieve file tree
+router.get('/getfiletreeexample', authenticateUser, async (req, res) => {
+  try {
+    res.json({ file_tree: {'file_path':'default'} });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 // Route to retrieve file tree
 router.get('/getfiletree', authenticateUser, async (req, res) => {

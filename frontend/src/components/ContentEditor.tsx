@@ -9,10 +9,11 @@ import { updateContent } from '@/lib/api';
 import { AutoResizeTextArea } from '@/components/AutoResizeTextArea';
 
 interface ContentEditorProps {
-  initialContent?: string;
+  filePath: string;
+  initialContent: string;
 }
 
-export const ContentEditor = ({ initialContent = '' }: ContentEditorProps) => {
+export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorProps) => {
   const [secretKey, setSecretKey] = useState('');
   const [content, setContent] = useState('');
   const [isContentLoaded, setIsContentLoaded] = useState(false);
@@ -23,7 +24,11 @@ export const ContentEditor = ({ initialContent = '' }: ContentEditorProps) => {
 
   useEffect(() => {
     setEncodedContent(initialContent);
-  }, [initialContent]);
+    // Reset content loaded state when file changes
+    setIsContentLoaded(false);
+    setContent('');
+    setMessage('');
+  }, [initialContent, filePath]);
 
   // Effect to hide success message after 5 seconds
   useEffect(() => {
@@ -86,10 +91,15 @@ export const ContentEditor = ({ initialContent = '' }: ContentEditorProps) => {
       return;
     }
 
+    if (!filePath) {
+      setMessage('No file selected');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const encryptedContent = encryptContent(content, secretKey);
-      await updateContent(encryptedContent);
+      await updateContent(filePath, encryptedContent);
       setMessage('Content saved successfully');
       setSaveSuccess(true);
       setEncodedContent(encryptedContent);
@@ -110,57 +120,57 @@ export const ContentEditor = ({ initialContent = '' }: ContentEditorProps) => {
     }
   };
 
- return (
-     <div className="space-y-4">
-       <div className="flex gap-2">
-         <Input
-           type="text"
-           placeholder="Secret key"
-           value={secretKey}
-           onChange={(e) => setSecretKey(e.target.value)}
-           className="flex-grow"
-         />
-         {!isContentLoaded && (
-           <Button
-             onClick={loadContent}
-             disabled={isLoading || !secretKey}>
-             Load content
-           </Button>
-         )}
-       </div>
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        <Input
+          type="text"
+          placeholder="Secret key"
+          value={secretKey}
+          onChange={(e) => setSecretKey(e.target.value)}
+          className="flex-grow"
+        />
+        {!isContentLoaded && (
+          <Button
+            onClick={loadContent}
+            disabled={isLoading || !secretKey}>
+            Load content
+          </Button>
+        )}
+      </div>
 
-       {isContentLoaded && (
-         <div>
-           <AutoResizeTextArea
-             value={content}
-             onChange={(e) => setContent(e.target.value)}
-             placeholder="Enter your content here..."
-             minHeight={128}
-           />
-           <div className="flex justify-end mt-2">
-             <Button
-               onClick={handleSave}
-               disabled={isLoading}
-               className={saveSuccess ? "bg-green-600 hover:bg-green-700" : ""}
-             >
-               {saveSuccess ? (
-                 <>
-                   <Check className="w-4 h-4 mr-2" />
-                   Saved
-                 </>
-               ) : (
-                 'Save'
-               )}
-             </Button>
-           </div>
-         </div>
-       )}
+      {isContentLoaded && (
+        <div>
+          <AutoResizeTextArea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Enter your content here..."
+            minHeight={128}
+          />
+          <div className="flex justify-end mt-2">
+            <Button
+              onClick={handleSave}
+              disabled={isLoading}
+              className={saveSuccess ? "bg-green-600 hover:bg-green-700" : ""}
+            >
+              {saveSuccess ? (
+                <>
+                  <Check className="w-4 h-4 mr-2" />
+                  Saved
+                </>
+              ) : (
+                'Save'
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
 
-       {message && (
-         <Alert>
-           <AlertDescription>{message}</AlertDescription>
-         </Alert>
-       )}
-     </div>
-   );
- };
+      {message && (
+        <Alert>
+          <AlertDescription>{message}</AlertDescription>
+        </Alert>
+      )}
+    </div>
+  );
+};
