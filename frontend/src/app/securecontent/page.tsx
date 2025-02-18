@@ -6,6 +6,7 @@ import { ContentEditor } from '@/components/ContentEditor';
 import { getContent, getFileTree } from '@/lib/api';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Header } from '@/components/Header';
+import FileTree from '@/components/FileTree';
 
 export default function SecureContentPage() {
   const router = useRouter();
@@ -85,29 +86,31 @@ export default function SecureContentPage() {
   if (isLoading) return <div className="container mx-auto p-4">Loading...</div>;
   if (error) return <Alert><AlertDescription>{error}</AlertDescription></Alert>;
 
-  return (
-    <>
-      <Header isAuthenticated={isAuthenticated} onLogout={handleLogout} />
-      <div className="container mx-auto p-4 max-w-2xl">
-        {fileList.length > 0 && (
-          <div className="mb-4">
-            <label className="block mb-2">Select a file:</label>
-            <select
-              value={selectedFilePath || ''}
-              onChange={handleFileChange}
-              className="w-full p-2 border rounded"
-            >
-              {fileList.map(file => (
-                <option key={file} value={file}>{file}</option>
-              ))}
-            </select>
-          </div>
-        )}
-        <ContentEditor
-          filePath={selectedFilePath || ''}
-          initialContent={encodedContent || ''}
-        />
-      </div>
-    </>
-  );
-}
+ return (
+     <>
+       <Header isAuthenticated={isAuthenticated} onLogout={handleLogout} />
+       <div className="container mx-auto p-4">
+         <div className="lg:grid lg:grid-cols-[300px,1fr] lg:gap-6">
+           {/* File Tree - Left column on desktop, top on mobile */}
+           <div className="mb-4 lg:mb-0">
+             {fileList.length > 0 && (
+               <FileTree
+                 files={fileList}
+                 selectedFile={selectedFilePath}
+                 onSelectFile={setSelectedFilePath}
+               />
+             )}
+           </div>
+
+           {/* Content Editor - Right column on desktop, below on mobile */}
+           <div className="max-w-2xl">
+             <ContentEditor
+               filePath={selectedFilePath || ''}
+               initialContent={encodedContent || ''}
+             />
+           </div>
+         </div>
+       </div>
+     </>
+   );
+ }

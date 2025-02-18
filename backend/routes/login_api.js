@@ -30,6 +30,7 @@ router.post('/login', async (req, res) => {
     .single();
 
   if (!userData || error) {
+    console.log("No userData or error");
     return res.json({ success: false, error: 'Invalid credentials' });
   }
 
@@ -37,7 +38,10 @@ router.post('/login', async (req, res) => {
     ? await verifyPassword(password, userData.hashed_password)
     : hashPasswordSha256(password) === userData.hashed_password;
 
-  if (!isValidPassword) return res.json({ success: false, error: 'Invalid credentials' });
+  if (!isValidPassword){
+    console.log("Password doesn't match Argon2 verification");
+    return res.json({ success: false, error: 'Invalid credentials' });
+  }
 
   req.session.user = { id: userData.id, username: username };
   res.json({ success: true });
