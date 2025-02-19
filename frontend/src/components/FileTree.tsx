@@ -9,6 +9,13 @@ interface TreeNode {
   children?: TreeNode[];
 }
 
+interface IntermediateTreeNode {
+  name: string;
+  path: string;
+  type: 'file' | 'folder';
+  children?: { [key: string]: IntermediateTreeNode };
+}
+
 interface FileTreeProps {
   files: string[];
   selectedFile: string | null;
@@ -18,7 +25,7 @@ interface FileTreeProps {
 const FileTree = ({ files, selectedFile, onSelectFile }: FileTreeProps) => {
   // Convert flat file list to tree structure
   const buildFileTree = (paths: string[]): TreeNode[] => {
-    const root: { [key: string]: TreeNode } = {};
+    const root: { [key: string]: IntermediateTreeNode } = {};
 
     paths.forEach(path => {
       const parts = path.split('/');
@@ -38,15 +45,21 @@ const FileTree = ({ files, selectedFile, onSelectFile }: FileTreeProps) => {
         }
 
         if (!isLastPart) {
-          current = current[part].children as { [key: string]: TreeNode };
+          if (!current[part].children) {
+            current[part].children = {};
+          }
+          current = current[part].children!;
         }
       });
     });
 
-    const convertToArray = (node: { [key: string]: TreeNode }): TreeNode[] => {
-      return Object.values(node).map(item => ({
-        ...item,
-        children: item.children ? convertToArray(item.children as { [key: string]: TreeNode }) : undefined
+    // Convert the nested object structure to arrays
+    const convertToArray = (obj: { [key: string]: IntermediateTreeNode }): TreeNode[] => {
+      return Object.values(obj).map(node => ({
+        name: node.name,
+        path: node.path,
+        type: node.type,
+        children: node.children ? convertToArray(node.children) : undefined
       }));
     };
 

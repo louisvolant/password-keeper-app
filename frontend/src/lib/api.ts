@@ -26,25 +26,18 @@ export const logout = async () => {
 };
 
 export async function getContent(filePath: string) {
-  const response = await api.get(`/api/getcontent?file_path=${encodeURIComponent(filePath)}`, {
-    method: 'GET',
-    credentials: 'include',
-  });
+  const url = '/api/getcontent?file_path='+encodeURIComponent(filePath);
+  const response = await api.get(url);
     return response.data;
 }
 
 export const updateContent = async (file_path: string, encoded_content: string) => {
-  const response = await api.post('/api/updatecontent',
-    { file_path, encoded_content } // 🛠 Ajout de file_path ici
-  );
+  const response = await api.post('/api/updatecontent', { file_path, encoded_content }   );
   return response.data;
 };
 
 
 export async function getFileTree() {
-  const response = await api.get('/api/getfiletree', {
-    method: 'GET',
-    credentials: 'include',
-  });
-    return response.data;
+  const response = await api.get('/api/getfiletree');
+  return response.data;
 }

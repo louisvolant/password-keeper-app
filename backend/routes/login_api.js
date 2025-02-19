@@ -30,7 +30,7 @@ router.post('/login', async (req, res) => {
     .single();
 
   if (!userData || error) {
-    console.log("No userData or error");
+    console.log("No userData or error" + error ? (" : "+error.message) : "");
     return res.json({ success: false, error: 'Invalid credentials' });
   }
 

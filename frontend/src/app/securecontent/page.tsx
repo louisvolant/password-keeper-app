@@ -1,4 +1,5 @@
 // src/app/securecontent/page.tsx
+// src/app/securecontent/page.tsx
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -42,7 +43,7 @@ export default function SecureContentPage() {
         } else {
           setError('Failed to fetch files');
         }
-      } catch (err) {
+      } catch {  // Removed the unused parameter entirely
         setError('Failed to fetch files');
         router.push('/');
       } finally {
@@ -71,12 +72,6 @@ export default function SecureContentPage() {
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const newFilePath = event.target.value;
-    console.log("File selected:", newFilePath);
-    setSelectedFilePath(newFilePath);
-  };
-
   const handleLogout = () => {
     document.cookie = 'auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
     setIsAuthenticated(false);
@@ -86,31 +81,31 @@ export default function SecureContentPage() {
   if (isLoading) return <div className="container mx-auto p-4">Loading...</div>;
   if (error) return <Alert><AlertDescription>{error}</AlertDescription></Alert>;
 
- return (
-     <>
-       <Header isAuthenticated={isAuthenticated} onLogout={handleLogout} />
-       <div className="container mx-auto p-4">
-         <div className="lg:grid lg:grid-cols-[300px,1fr] lg:gap-6">
-           {/* File Tree - Left column on desktop, top on mobile */}
-           <div className="mb-4 lg:mb-0">
-             {fileList.length > 0 && (
-               <FileTree
-                 files={fileList}
-                 selectedFile={selectedFilePath}
-                 onSelectFile={setSelectedFilePath}
-               />
-             )}
-           </div>
+  return (
+    <>
+      <Header isAuthenticated={isAuthenticated ?? false} onLogout={handleLogout} />
+      <div className="container mx-auto p-4">
+        <div className="lg:grid lg:grid-cols-[300px,1fr] lg:gap-6">
+          {/* File Tree - Left column on desktop, top on mobile */}
+          <div className="mb-4 lg:mb-0">
+            {fileList.length > 0 && (
+              <FileTree
+                files={fileList}
+                selectedFile={selectedFilePath}
+                onSelectFile={setSelectedFilePath}
+              />
+            )}
+          </div>
 
-           {/* Content Editor - Right column on desktop, below on mobile */}
-           <div className="max-w-2xl">
-             <ContentEditor
-               filePath={selectedFilePath || ''}
-               initialContent={encodedContent || ''}
-             />
-           </div>
-         </div>
-       </div>
-     </>
-   );
- }
+          {/* Content Editor - Right column on desktop, below on mobile */}
+          <div className="max-w-2xl">
+            <ContentEditor
+              filePath={selectedFilePath || ''}
+              initialContent={encodedContent || ''}
+            />
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
