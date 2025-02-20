@@ -91,8 +91,10 @@ const FileTree = ({ files, selectedFile, onSelectFile }: FileTreeProps) => {
         <div
           className={`
             flex items-center py-1 px-2 cursor-pointer
-            hover:bg-gray-100
-            ${isSelected ? 'bg-blue-100 hover:bg-blue-200' : ''}
+            transition-colors
+            dark:text-gray-100
+            hover:bg-gray-100 dark:hover:bg-gray-700
+            ${isSelected ? 'bg-blue-100 dark:bg-blue-800 hover:bg-blue-200 dark:hover:bg-blue-700' : ''}
           `}
           style={{ paddingLeft: `${level * 1.5}rem` }}
           onClick={() => isFolder ? toggleFolder(node.path) : onSelectFile(node.path)}
@@ -100,16 +102,16 @@ const FileTree = ({ files, selectedFile, onSelectFile }: FileTreeProps) => {
           {isFolder ? (
             <>
               {isExpanded ? (
-                <ChevronDown className="w-4 h-4 mr-1" />
+                <ChevronDown className="w-4 h-4 mr-1 dark:text-gray-400" />
               ) : (
-                <ChevronRight className="w-4 h-4 mr-1" />
+                <ChevronRight className="w-4 h-4 mr-1 dark:text-gray-400" />
               )}
-              <Folder className="w-4 h-4 mr-2 text-blue-500" />
+              <Folder className="w-4 h-4 mr-2 text-blue-500 dark:text-blue-400" />
             </>
           ) : (
             <>
               <span className="w-4 mr-1" />
-              <FileText className="w-4 h-4 mr-2 text-gray-500" />
+              <FileText className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400" />
             </>
           )}
           <span className="truncate">{node.name}</span>
@@ -122,7 +124,7 @@ const FileTree = ({ files, selectedFile, onSelectFile }: FileTreeProps) => {
   };
 
   return (
-    <div className="border rounded-lg overflow-hidden bg-white">
+    <div className="border dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800 transition-colors">
       {tree.map(node => renderTreeNode(node))}
     </div>
   );

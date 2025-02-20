@@ -21,15 +21,12 @@ export const AutoResizeTextArea = ({
   const adjustHeight = useCallback(() => {
     const textarea = textareaRef.current;
     if (textarea) {
-      // Reset height to allow shrinking
       textarea.style.height = 'auto';
-      // Set new height based on scrollHeight
       const newHeight = Math.max(textarea.scrollHeight, minHeight);
       textarea.style.height = `${newHeight}px`;
     }
   }, [minHeight]);
 
-  // Adjust height when value changes
   useEffect(() => {
     adjustHeight();
   }, [value, adjustHeight]);
@@ -43,7 +40,16 @@ export const AutoResizeTextArea = ({
         adjustHeight();
       }}
       placeholder={placeholder}
-      className={`w-full p-2 border rounded resize-none transition-height duration-200 ${className}`}
+      className={`
+        w-full p-2 border rounded resize-none transition-all duration-200
+        bg-white dark:bg-gray-700
+        text-gray-900 dark:text-gray-100
+        placeholder-gray-500 dark:placeholder-gray-400
+        border-gray-300 dark:border-gray-600
+        focus:border-blue-500 dark:focus:border-blue-400
+        focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400
+        ${className}
+      `}
       style={{ minHeight: `${minHeight}px` }}
     />
   );

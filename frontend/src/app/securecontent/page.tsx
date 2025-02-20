@@ -82,30 +82,27 @@ export default function SecureContentPage() {
   if (error) return <Alert><AlertDescription>{error}</AlertDescription></Alert>;
 
   return (
-    <>
-      <Header isAuthenticated={isAuthenticated ?? false} onLogout={handleLogout} />
-      <div className="container mx-auto p-4">
-        <div className="lg:grid lg:grid-cols-[300px,1fr] lg:gap-6">
-          {/* File Tree - Left column on desktop, top on mobile */}
-          <div className="mb-4 lg:mb-0">
-            {fileList.length > 0 && (
-              <FileTree
-                files={fileList}
-                selectedFile={selectedFilePath}
-                onSelectFile={setSelectedFilePath}
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+        <Header isAuthenticated={isAuthenticated ?? false} onLogout={handleLogout} />
+        <div className="container mx-auto p-4">
+          <div className="lg:grid lg:grid-cols-[300px,1fr] lg:gap-6">
+            <div className="mb-4 lg:mb-0">
+              {fileList.length > 0 && (
+                <FileTree
+                  files={fileList}
+                  selectedFile={selectedFilePath}
+                  onSelectFile={setSelectedFilePath}
+                />
+              )}
+            </div>
+            <div className="max-w-2xl">
+              <ContentEditor
+                filePath={selectedFilePath || ''}
+                initialContent={encodedContent || ''}
               />
-            )}
-          </div>
-
-          {/* Content Editor - Right column on desktop, below on mobile */}
-          <div className="max-w-2xl">
-            <ContentEditor
-              filePath={selectedFilePath || ''}
-              initialContent={encodedContent || ''}
-            />
+            </div>
           </div>
         </div>
       </div>
-    </>
-  );
-}
+    );
+  }
