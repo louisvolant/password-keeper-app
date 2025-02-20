@@ -21,13 +21,13 @@ router.get('/getcontent', authenticateUser, async (req, res) => {
       .from(TABLE_USER_CONTENT)
       .select('encoded_content, file_path')
       .eq('user_id', req.user.id)
-      .eq('file_path', file_path) // ✅ Filtrer par file_path
+      .eq('file_path', file_path)
       .single();
 
     if (error || !data) {
       const { error: insertError } = await supabase
         .from(TABLE_USER_CONTENT)
-        .insert([{ user_id: req.user.id, encoded_content: '', file_path: 'default' }]);
+        .insert([{ user_id: req.user.id, encoded_content: '', file_path: file_path }]);
 
       if (insertError) {
         console.error('Insert error:', insertError);

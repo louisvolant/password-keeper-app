@@ -86,7 +86,7 @@ export default function SecureContentPage() {
         <Header isAuthenticated={isAuthenticated ?? false} onLogout={handleLogout} />
         <div className="container mx-auto p-4">
           <div className="lg:grid lg:grid-cols-[300px,1fr] lg:gap-6">
-            <div className="mb-4 lg:mb-0">
+            <div className="mb-4 max-w-2xl lg:mb-0">
               {fileList.length > 0 && (
                 <FileTree
                   files={fileList}

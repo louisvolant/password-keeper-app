@@ -5,6 +5,16 @@ const router = express.Router();
 const supabase = require('../config/supabase');
 const argon2 = require('argon2');
 const crypto = require('crypto');
+const winston = require('winston');
+const logger = winston.createLogger({
+  level: 'info',
+  format: winston.format.json(),
+  transports: [
+    new winston.transports.File({ filename: 'error.log', level: 'error' }),
+    new winston.transports.Console()
+  ]
+});
+
 
 const hashPasswordSha256 = (password) => {
   const salt = process.env.SALT_SHA_256_HASHING;
@@ -23,30 +33,72 @@ const verifyPassword = async (password, hash) => {
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
-  const { data: userData, error } = await supabase
-    .from('users')
-    .select('*')
-    .ilike('username', username)
-    .single();
+  try {
+    const { data: userData, error } = await supabase
+      .from('users')
+      .select('*')
+      .ilike('username', username)
+      .single();
 
-  if (!userData || error) {
-    console.log("No userData or error" + error ? (" : "+error.message) : "");
-    return res.json({ success: false, error: 'Invalid credentials' });
+    if (error) {
+    logger.error('Database query error', {
+        message: error.message,
+        code: error.code,
+        hint: error.hint,
+        details: error.details
+      });
+
+      // Check if it's a timeout error specifically
+      if (error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
+        return res.status(503).json({
+          success: false,
+          error: 'Service temporarily unavailable due to timeout'
+        });
+      }
+
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid credentials'
+      });
+    }
+
+    if (!userData) {
+      logger.info('No user found for username', username);
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid credentials'
+      });
+    }
+
+    const isValidPassword = userData.password_version === 1
+      ? await verifyPassword(password, userData.hashed_password)
+      : hashPasswordSha256(password) === userData.hashed_password;
+
+    if (!isValidPassword) {
+      logger.info('Password verification failed for username:', username);
+      return res.status(401).json({
+        success: false,
+        error: 'Invalid credentials'
+      });
+    }
+
+    req.session.user = { id: userData.id, username: username };
+    return res.json({ success: true });
+
+  } catch (err) {
+    logger.error('Unexpected error in login route:', {
+      message: err.message,
+      stack: err.stack,
+      username // Include for debugging, remove in production if sensitive
+    });
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
   }
-
-  let isValidPassword = userData.password_version === 1
-    ? await verifyPassword(password, userData.hashed_password)
-    : hashPasswordSha256(password) === userData.hashed_password;
-
-  if (!isValidPassword){
-    console.log("Password doesn't match Argon2 verification");
-    return res.json({ success: false, error: 'Invalid credentials' });
-  }
-
-  req.session.user = { id: userData.id, username: username };
-  res.json({ success: true });
 });
 
+// Rest of your routes remain unchanged
 router.get('/check-auth', (req, res) => {
   res.json({ isAuthenticated: !!req.session.user });
 });
