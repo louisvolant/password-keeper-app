@@ -1,10 +1,9 @@
 // src/app/securecontent/page.tsx
-// src/app/securecontent/page.tsx
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { checkAuth, getContent, getFileTree } from '@/lib/api';
 import { ContentEditor } from '@/components/ContentEditor';
-import { getContent, getFileTree } from '@/lib/api';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Header } from '@/components/Header';
 import FileTree from '@/components/FileTree';
@@ -21,16 +20,13 @@ export default function SecureContentPage() {
   useEffect(() => {
     const checkAuthAndFetchFiles = async () => {
       try {
-        console.log("Checking authentication...");
-        const authCookie = document.cookie.split('; ').find(row => row.startsWith('auth='));
-        if (!authCookie) {
-          console.log("Not authenticated, redirecting...");
+        const authResponse = await checkAuth();
+        if (!authResponse?.isAuthenticated) {
           setIsAuthenticated(false);
           return router.push('/');
         }
         setIsAuthenticated(true);
 
-        console.log("Fetching file tree...");
         const filesResponse = await getFileTree();
         if (filesResponse.file_tree) {
           const parsedFiles = JSON.parse(filesResponse.file_tree);
@@ -43,8 +39,10 @@ export default function SecureContentPage() {
         } else {
           setError('Failed to fetch files');
         }
-      } catch {  // Removed the unused parameter entirely
-        setError('Failed to fetch files');
+      } catch (err) {
+        console.error('Error in auth or file fetch:', err);
+        setIsAuthenticated(false);
+        setError('Authentication failed');
         router.push('/');
       } finally {
         setIsLoading(false);
@@ -55,16 +53,14 @@ export default function SecureContentPage() {
   }, [router]);
 
   useEffect(() => {
-    if (selectedFilePath) {
-      console.log("Fetching content for:", selectedFilePath);
+    if (selectedFilePath && isAuthenticated) {
       fetchContent(selectedFilePath);
     }
-  }, [selectedFilePath]);
+  }, [selectedFilePath, isAuthenticated]);
 
   const fetchContent = async (filePath: string) => {
     try {
       const content = await getContent(filePath);
-      console.log("Content received for", filePath);
       setEncodedContent(content.encoded_content);
     } catch (err) {
       console.error("Error fetching content:", err);
@@ -72,19 +68,27 @@ export default function SecureContentPage() {
     }
   };
 
-  const handleLogout = () => {
-    document.cookie = 'auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    setIsAuthenticated(false);
-    router.push('/');
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/logout', { method: 'POST' });
+      setIsAuthenticated(false);
+      router.push('/');
+    } catch (err) {
+      console.error('Logout failed:', err);
+      router.push('/');
+    }
   };
 
   if (isLoading) return <div className="container mx-auto p-4">Loading...</div>;
-  if (error) return <Alert><AlertDescription>{error}</AlertDescription></Alert>;
+  if (!isAuthenticated) return null; // Will redirect via useEffect
 
   return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-        <Header isAuthenticated={isAuthenticated ?? false} onLogout={handleLogout} />
-        <div className="container mx-auto p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+      <Header isAuthenticated={true} onLogout={handleLogout} />
+      <div className="container mx-auto p-4">
+        {error ? (
+          <Alert><AlertDescription>{error}</AlertDescription></Alert>
+        ) : (
           <div className="lg:grid lg:grid-cols-[300px,1fr] lg:gap-6">
             <div className="mb-4 max-w-2xl lg:mb-0">
               {fileList.length > 0 && (
@@ -102,7 +106,8 @@ export default function SecureContentPage() {
               />
             </div>
           </div>
-        </div>
+        )}
       </div>
-    );
-  }
+    </div>
+  );
+}

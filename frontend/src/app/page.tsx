@@ -2,6 +2,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { LoginForm } from '@/components/LoginForm';
 import { checkAuth } from '@/lib/api';
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -10,7 +11,8 @@ import { Lock } from 'lucide-react';
 import { Header } from '@/components/Header';
 
 export default function HomePage() {
-  const [token, setToken] = useState<string>('');
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -19,36 +21,33 @@ export default function HomePage() {
       try {
         const response = await checkAuth();
         console.log('Auth check response:', response);
-        if (response && response.authenticated === true) {
-          setToken('authenticated');
+        if (response?.isAuthenticated) {
+          setIsAuthenticated(true);
+          router.push('/securecontent'); // Redirect to secure content if authenticated
+        } else {
+          setIsAuthenticated(false);
         }
       } catch (err) {
         console.error('Auth check failed:', err);
+        setIsAuthenticated(false);
       } finally {
         setIsLoading(false);
       }
     };
 
     verifyAuth();
-  }, []);
+  }, [router]);
 
-  const handleLoginSuccess = async () => {
+  const handleLoginSuccess = () => {
     setError('');
-    try {
-      document.cookie = `auth=true; path=/`;
-      setToken('authenticated');
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(`Error retrieving content: ${err.message}`);
-      } else {
-        setError('Error retrieving content.');
-      }
-    }
+    setIsAuthenticated(true);
+    router.push('/securecontent');
   };
 
-  const handleLogout = () => {
-    setToken('');
-    document.cookie = 'auth=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+  const handleLogout = async () => {
+    setIsAuthenticated(false);
+    await fetch('/api/logout', { method: 'POST' });
+    router.push('/');
   };
 
   if (isLoading) {
@@ -63,17 +62,17 @@ export default function HomePage() {
   return (
     <>
       <Header
-        isAuthenticated={!!token}
+        isAuthenticated={isAuthenticated ?? false}
         onLogout={handleLogout}
       />
       <main className="container mx-auto p-4 max-w-2xl">
-        {!token ? (
+        {isAuthenticated === false ? (
           <LoginForm
             onSuccess={handleLoginSuccess}
             onError={setError}
             clearError={() => setError('')}
           />
-        ) : (
+        ) : isAuthenticated === true ? (
           <Link href="/securecontent">
             <Button
               className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200"
@@ -82,7 +81,7 @@ export default function HomePage() {
               Access Secure Content
             </Button>
           </Link>
-        )}
+        ) : null}
 
         {error && (
           <Alert variant="error" className="mt-4">
