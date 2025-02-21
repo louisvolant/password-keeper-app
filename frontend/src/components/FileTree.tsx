@@ -108,7 +108,7 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
     const newPath = folderPath ? `${folderPath}/${newItemInput.value}` : newItemInput.value;
 
     try {
-      let newFiles = [...files];
+      const newFiles = [...files];
       if (newItemInput.type === 'file') {
         await updateContent(newPath, '');
         newFiles.push(newPath);
