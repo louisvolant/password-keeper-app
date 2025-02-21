@@ -106,7 +106,7 @@ router.get('/check-auth', (req, res) => {
 router.post('/logout', (req, res) => {
   req.session.destroy((err) => {
     if (err) res.status(500).json({ error: 'Logout failed' });
-    else res.clearCookie('connect.sid').json({ success: true });
+    else res.clearCookie('session').json({ success: true });
   });
 });
 

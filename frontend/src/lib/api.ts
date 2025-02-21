@@ -16,8 +16,8 @@ export const login = async (username: string, password: string) => {
 };
 
 export const checkAuth = async () => {
-    const response = await api.get('/api/check-auth', { withCredentials: true });
-    return response.data;
+  const response = await api.get('/api/check-auth', { withCredentials: true });
+  return response.data;
 };
 
 export const logout = async () => {
@@ -26,18 +26,27 @@ export const logout = async () => {
 };
 
 export async function getContent(filePath: string) {
-  const url = '/api/getcontent?file_path='+encodeURIComponent(filePath);
+  const url = '/api/getcontent?file_path=' + encodeURIComponent(filePath);
   const response = await api.get(url);
-    return response.data;
+  return response.data;
 }
 
 export const updateContent = async (file_path: string, encoded_content: string) => {
-  const response = await api.post('/api/updatecontent', { file_path, encoded_content }   );
+  const response = await api.post('/api/updatecontent', { file_path, encoded_content });
   return response.data;
 };
-
 
 export async function getFileTree() {
   const response = await api.get('/api/getfiletree');
   return response.data;
 }
+
+export const updateFileTree = async (file_tree: string[]) => {
+  const response = await api.post('/api/updatefiletree', { file_tree: JSON.stringify(file_tree) });
+  return response.data;
+};
+
+export const removeFile = async (file_path: string) => {
+  const response = await api.post('/api/remove_file', { file_path });
+  return response.data;
+};

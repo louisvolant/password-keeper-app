@@ -79,8 +79,12 @@ export default function SecureContentPage() {
     }
   };
 
+  const handleUpdateFiles = (newFiles: string[]) => {
+    setFileList(newFiles);
+  };
+
   if (isLoading) return <div className="container mx-auto p-4">Loading...</div>;
-  if (!isAuthenticated) return null; // Will redirect via useEffect
+  if (!isAuthenticated) return null;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
@@ -96,6 +100,7 @@ export default function SecureContentPage() {
                   files={fileList}
                   selectedFile={selectedFilePath}
                   onSelectFile={setSelectedFilePath}
+                  onUpdateFiles={handleUpdateFiles}
                 />
               )}
             </div>
