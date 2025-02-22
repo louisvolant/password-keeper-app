@@ -1,6 +1,7 @@
 // src/components/LoginForm.tsx
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,7 +17,6 @@ export const LoginForm = ({ onSuccess, onError, clearError }: LoginFormProps) =>
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +70,17 @@ export const LoginForm = ({ onSuccess, onError, clearError }: LoginFormProps) =>
             {isLoading ? "Logging in..." : "Login"}
           </Button>
         </form>
+        <div className="mt-4 text-center">
+          <Link href="/register">
+            <Button
+              variant="outline"
+              className="w-full border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              disabled={isLoading}
+            >
+              Register
+            </Button>
+          </Link>
+        </div>
       </CardContent>
     </Card>
   );

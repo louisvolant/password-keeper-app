@@ -50,3 +50,8 @@ export const removeFile = async (file_path: string) => {
   const response = await api.post('/api/remove_file', { file_path });
   return response.data;
 };
+
+export const register = async (username: string, email: string, password: string) => {
+  const response = await api.post('/api/register', { username, email, password });
+  return response.data;
+};
