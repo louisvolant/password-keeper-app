@@ -179,6 +179,16 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
     }
   };
 
+  const handleRowClick = (e: React.MouseEvent, isFolder: boolean, path: string) => {
+    // Prevent row click if an action icon was clicked
+    if ((e.target as HTMLElement).closest('.action-icon')) return;
+    if (isFolder) {
+      toggleFolder(path);
+    } else {
+      onSelectFile(path);
+    }
+  };
+
   const renderTreeNode = (node: TreeNode, level: number = 0) => {
     const isFolder = node.type === 'folder';
     const isExpanded = expandedFolders.has(node.path);
@@ -219,11 +229,9 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
               ${isSelected ? 'bg-blue-100 dark:bg-blue-800 hover:bg-blue-200 dark:hover:bg-blue-700' : ''}
             `}
             style={{ paddingLeft: `${level * 1.5}rem` }}
+            onClick={(e) => handleRowClick(e, isFolder, node.path)}
           >
-            <div
-              className="flex-1 flex items-center"
-              onClick={() => isFolder ? toggleFolder(node.path) : onSelectFile(node.path)}
-            >
+            <div className="flex-1 flex items-center">
               {isFolder ? (
                 <>
                   {isExpanded ? (
@@ -242,27 +250,27 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
               <span className="truncate">{node.name}</span>
             </div>
 
-            <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100">
+            <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 md:opacity-100">
               {isFolder && (
                 <>
                   <Plus
-                    className="w-4 h-4 text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer"
-                    onClick={() => handleAddItem(node.path, 'file')}
+                    className="w-4 h-4 text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer action-icon"
+                    onClick={(e) => { e.stopPropagation(); handleAddItem(node.path, 'file'); }}
                   />
                   <FolderPlus
-                    className="w-4 h-4 text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer"
-                    onClick={() => handleAddItem(node.path, 'folder')}
+                    className="w-4 h-4 text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 cursor-pointer action-icon"
+                    onClick={(e) => { e.stopPropagation(); handleAddItem(node.path, 'folder'); }}
                   />
                 </>
               )}
               <Pencil
-                className="w-4 h-4 text-gray-600 dark:text-gray-300 hover:text-yellow-500 dark:hover:text-yellow-400 cursor-pointer"
-                onClick={() => handleRename(node.path, node.name)}
+                className="w-4 h-4 text-gray-600 dark:text-gray-300 hover:text-yellow-500 dark:hover:text-yellow-400 cursor-pointer action-icon"
+                onClick={(e) => { e.stopPropagation(); handleRename(node.path, node.name); }}
               />
               {!isFolder && (
                 <Trash2
-                  className="w-4 h-4 text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 cursor-pointer"
-                  onClick={() => handleRemoveFile(node.path)}
+                  className="w-4 h-4 text-gray-600 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-400 cursor-pointer action-icon"
+                  onClick={(e) => { e.stopPropagation(); handleRemoveFile(node.path); }}
                 />
               )}
             </div>
@@ -303,7 +311,7 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
     <div className="border dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800 transition-colors">
       <div className="p-2 flex items-center space-x-4">
         <Button
-          variant="outline" // Changed from "ghost" to "outline"
+          variant="outline"
           className="flex items-center text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400"
           onClick={() => handleAddItem('', 'file')}
         >
@@ -311,7 +319,7 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
           Add File
         </Button>
         <Button
-          variant="outline" // Changed from "ghost" to "outline"
+          variant="outline"
           className="flex items-center text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400"
           onClick={() => handleAddItem('', 'folder')}
         >
