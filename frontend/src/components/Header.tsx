@@ -34,7 +34,7 @@ export const Header = ({ isAuthenticated, onLogout }: HeaderProps) => {
 
   return (
     <header className="bg-blue-600 dark:bg-blue-800 text-white py-4">
-      <div className="container mx-auto px-4 flex items-center justify-between">
+      <div className="container mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-4 md:gap-0">
         <Link href="/" className="flex items-center">
           <Image
             src="/icon_shield.svg"
@@ -47,14 +47,14 @@ export const Header = ({ isAuthenticated, onLogout }: HeaderProps) => {
           <h1 className="text-2xl font-bold">Password Keeper</h1>
         </Link>
 
-        <nav className="flex items-center space-x-4"> {/* Navigation styling */}
+        <nav className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4">
           <Link href="/confidentiality-rules" className="hover:text-gray-200">
             Confidentiality Rules
           </Link>
           <Link href="/general-conditions" className="hover:text-gray-200">
             General Conditions
           </Link>
-          {isAuthenticated && ( // Conditionally render logout button
+          {isAuthenticated && (
             <Button
               variant="default"
               onClick={handleLogout}
