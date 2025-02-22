@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { LoginForm } from '@/components/LoginForm';
-import { checkAuth } from '@/lib/api';
+import { checkAuth, logout } from '@/lib/api';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Lock } from 'lucide-react';
@@ -23,7 +23,7 @@ export default function HomePage() {
         console.log('Auth check response:', response);
         if (response?.isAuthenticated) {
           setIsAuthenticated(true);
-          router.push('/securecontent'); // Redirect to secure content if authenticated
+          router.push('/securecontent');
         } else {
           setIsAuthenticated(false);
         }
@@ -45,9 +45,14 @@ export default function HomePage() {
   };
 
   const handleLogout = async () => {
-    setIsAuthenticated(false);
-    await fetch('/api/logout', { method: 'POST' });
-    router.push('/');
+    try {
+      await logout();
+      setIsAuthenticated(false);
+      router.push('/');
+    } catch (err) {
+      console.error('Logout failed:', err);
+      router.push('/');
+    }
   };
 
   if (isLoading) {

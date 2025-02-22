@@ -2,7 +2,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { checkAuth, getContent, getFileTree } from '@/lib/api';
+import { checkAuth, getContent, getFileTree, logout } from '@/lib/api';
 import { ContentEditor } from '@/components/ContentEditor';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Header } from '@/components/Header';
@@ -70,7 +70,7 @@ export default function SecureContentPage() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/logout', { method: 'POST' });
+      await logout();
       setIsAuthenticated(false);
       router.push('/');
     } catch (err) {
