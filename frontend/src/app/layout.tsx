@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const geistSans = Geist({
+const geistSans = localFont({
+  src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
-  subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
+const geistMono = localFont({
+  src: "./fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
-  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     description: "App to save all passwords in the clouds, in a AES256 way.",
     type: "website",
     url: "https://pioo.fr",
-    images: ['/icon_shield.png'],
+    images: ["/icon_shield.png"],
   },
   icons: [
     { rel: "icon", url: "/icon_shield.svg" },
@@ -36,7 +36,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark:bg-gray-900">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-100 dark:bg-gray-900`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-100 dark:bg-gray-900`}
+      >
         {children}
         <footer className="bg-gray-200 dark:bg-gray-800 py-4 mt-8">
           <div className="container mx-auto px-4 text-center text-gray-600 dark:text-gray-300">
