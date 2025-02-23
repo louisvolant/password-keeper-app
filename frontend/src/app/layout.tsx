@@ -1,6 +1,11 @@
+// src/app/layout.tsx
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { ReactNode } from "react";
+import Navbar from "./Navbar";
+import Footer from "./Footer";
+import { Header } from "@/components/Header";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -29,22 +34,18 @@ export const metadata: Metadata = {
   ],
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+interface RootLayoutProps {
+  children: ReactNode;
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" className="dark:bg-gray-900">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-100 dark:bg-gray-900`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900`}
       >
-        {children}
-        <footer className="bg-gray-200 dark:bg-gray-800 py-4 mt-8">
-          <div className="container mx-auto px-4 text-center text-gray-600 dark:text-gray-300">
-            © {new Date().getFullYear()} Pioo.fr. All rights reserved.
-          </div>
-        </footer>
+        {children} {/* Children will include Header, Navbar, and page content */}
+        <Footer />
       </body>
     </html>
   );

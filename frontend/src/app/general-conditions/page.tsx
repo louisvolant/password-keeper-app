@@ -5,7 +5,7 @@ import { Header } from '@/components/Header';
 const domain = process.env.NEXT_PUBLIC_DOMAIN_URL;
 
 export default function GeneralConditionsPage() {
-  const contactEmail = `contact [at] ${domain}`; // Construct the email
+  const contactEmail = `contact [at] ${domain}`;
 
   return (
       <div>
