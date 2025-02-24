@@ -51,7 +51,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="mt-4">
-          © {new Date().getFullYear()} Pioo.fr. All rights reserved.
+          © {new Date().getFullYear()} Securaised.net. All rights reserved.
         </div>
       </div>
     </footer>

@@ -11,8 +11,10 @@ export const internalLinks: LinkItem[] = [
 ];
 
 export const externalLinks: LinkItem[] = [
-  { label: 'Personnal Page', href: 'https://www.louisvolant.com' },
+  { label: 'Personal Page', href: 'https://www.louisvolant.com' },
+  { label: 'Password Keeper', href: 'https://www.securaised.net' },
   { label: 'QR Code Tool', href: 'https://qr-code-tool.louisvolant.com' },
   { label: 'Random Text Generator', href: 'https://random-text-generator.louisvolant.com' },
-  { label: '[ARCHIVE] Old blog', href: 'https://www.abricocotier.fr' },
+  { label: 'Rain Under The Cloud', href: 'https://rainunderthe.cloud' },
+  { label: 'My 20 years old blog', href: 'https://www.abricocotier.fr' },
 ];
