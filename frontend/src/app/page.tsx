@@ -24,7 +24,7 @@ export default function HomePage() {
         console.log("Auth check response:", response);
         if (response?.isAuthenticated) {
           setIsAuthenticated(true);
-          router.push("/securecontent");
+          router.push("/");
         } else {
           setIsAuthenticated(false);
         }
@@ -42,7 +42,7 @@ export default function HomePage() {
   const handleLoginSuccess = () => {
     setError("");
     setIsAuthenticated(true);
-    router.push("/securecontent");
+    router.push("/");
   };
 
   const handleLogout = async () => {
@@ -70,20 +70,33 @@ export default function HomePage() {
       onLogout={handleLogout}
     >
       <main className="container mx-auto p-4 max-w-2xl">
-        {isAuthenticated === false ? (
+        {isAuthenticated === true ? (
+          <div className="flex flex-col gap-4"> {/* Flexbox container */}
+            <Link href="/securecontent">
+              <Button className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                <Lock className="w-4 h-4" />
+                Access Secure Content
+              </Button>
+            </Link>
+            <Link href="/temporarycontent">
+              <Button className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                <Lock className="w-4 h-4" />
+                Create Temporary Link to share
+              </Button>
+            </Link>
+            <Link href="/passwordchange">
+              <Button className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                Change password
+              </Button>
+            </Link>
+          </div>
+        ) : (
           <LoginForm
             onSuccess={handleLoginSuccess}
             onError={setError}
             clearError={() => setError("")}
           />
-        ) : isAuthenticated === true ? (
-          <Link href="/securecontent">
-            <Button className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
-              <Lock className="w-4 h-4" />
-              Access Secure Content
-            </Button>
-          </Link>
-        ) : null}
+        )}
 
         {error && (
           <Alert variant="error" className="mt-4">
