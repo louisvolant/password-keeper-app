@@ -1,14 +1,16 @@
 // server.js
+require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const cors = require('cors');
-require('dotenv').config();
 
 const app = express();
-// Middleware to parse JSON requests
-app.use(express.json());
 
 const apiRoutes = require('./routes/api');
+const scheduler = require('./scheduler');
+
+// Middleware to parse JSON requests
+app.use(express.json());
 
 // Middleware
 app.use(cors({
