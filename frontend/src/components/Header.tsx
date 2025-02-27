@@ -51,7 +51,7 @@ export const Header = ({ isAuthenticated, onLogout, toggleSidebar, isSidebarOpen
           {/* Logo and Title */}
           <Link href="/" className="flex items-center">
             <Image
-              src="/icon_shield.svg"
+              src="/icon_shield.png"
               alt="Shield Tool Logo"
               width={32}
               height={32}
