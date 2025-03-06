@@ -52,7 +52,7 @@ router.post('/register', async (req, res) => {
     // Insert new user
     const { data: newUser, error: insertError } = await supabase
       .from('users')
-      .insert({ username, email, hashed_password: hashedPassword })
+      .insert({ username, email, hashed_password: hashedPassword, password_version: 1 })
       .select('id')
       .single();
 

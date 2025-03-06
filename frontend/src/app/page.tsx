@@ -5,17 +5,20 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LoginForm } from "@/components/LoginForm";
-import { checkAuth, logout } from "@/lib/api";
+import { checkAuth, logout, deleteMyAccount } from "@/lib/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 import ClientLayout from "./ClientLayout";
+import { ConfirmationModal } from "@/components/ConfirmationModal";
 
 export default function HomePage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const verifyAuth = async () => {
@@ -56,6 +59,29 @@ export default function HomePage() {
     }
   };
 
+  const handleAccountDeletion = async () => {
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmAccountDeletion = async () => {
+    setIsDeleting(true);
+    try {
+      const response = await deleteMyAccount();
+      if (response.success) {
+        setIsAuthenticated(false);
+        router.push("/");
+      } else {
+        setError(response.error || "Failed to delete account");
+      }
+    } catch (err) {
+      console.error("Account deletion failed:", err);
+      setError("An error occurred while deleting your account");
+    } finally {
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <ClientLayout isAuthenticated={false}>
@@ -71,7 +97,7 @@ export default function HomePage() {
     >
       <main className="container mx-auto p-4 max-w-2xl">
         {isAuthenticated === true ? (
-          <div className="flex flex-col gap-4"> {/* Flexbox container */}
+          <div className="flex flex-col gap-4">
             <Link href="/securecontent">
               <Button className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
                 <Lock className="w-4 h-4" />
@@ -89,6 +115,13 @@ export default function HomePage() {
                 Change password
               </Button>
             </Link>
+            <Button
+              onClick={handleAccountDeletion}
+              disabled={isDeleting}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDeleting ? "Deleting..." : "Delete my account"}
+            </Button>
           </div>
         ) : (
           <LoginForm
@@ -103,6 +136,16 @@ export default function HomePage() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
+
+        <ConfirmationModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          onConfirm={confirmAccountDeletion}
+          title="Delete Account"
+          message="Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed."
+          confirmText={isDeleting ? "Deleting..." : "Yes, Delete"}
+          cancelText="No, Cancel"
+        />
       </main>
     </ClientLayout>
   );

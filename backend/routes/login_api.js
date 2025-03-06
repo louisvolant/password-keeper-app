@@ -40,8 +40,10 @@ router.post('/login', async (req, res) => {
       .ilike('username', username)
       .single();
 
+    //logger.info('userData : ' + JSON.stringify(userData));
+
     if (error) {
-    logger.error('Database query error', {
+      logger.error('Database query error', {
         message: error.message,
         code: error.code,
         hint: error.hint,
@@ -70,12 +72,14 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    logger.info('userData.password_version : ' + userData.password_version);
+
     const isValidPassword = userData.password_version === 1
       ? await verifyPassword(password, userData.hashed_password)
       : hashPasswordSha256(password) === userData.hashed_password;
 
     if (!isValidPassword) {
-      logger.info('Password verification failed for username:', username);
+      logger.info('Password verification failed for username:' + username);
       return res.status(401).json({
         success: false,
         error: 'Invalid credentials'
@@ -173,6 +177,93 @@ router.post('/logout', (req, res) => {
     if (err) res.status(500).json({ error: 'Logout failed' });
     else res.clearCookie('session').json({ success: true });
   });
+});
+
+router.post('/delete_my_account', async (req, res) => {
+  // Check if user is authenticated
+  if (!req.session.user) {
+    logger.info('Attempted account deletion without authentication');
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized - Please log in first'
+    });
+  }
+
+  const userId = req.session.user.id;
+
+  try {
+    // 1. Delete all temporary content
+    const { error: tempContentError } = await supabase
+      .from('temporary_content')
+      .delete()
+      .eq('user_id', userId);
+
+    if (tempContentError) {
+      logger.error('Error deleting temporary content:', tempContentError);
+      throw new Error('Failed to delete temporary content');
+    }
+
+    // 2. Delete all content
+    const { error: contentError } = await supabase
+      .from('user_content')
+      .delete()
+      .eq('user_id', userId);
+
+    if (contentError) {
+      logger.error('Error deleting user content:', contentError);
+      throw new Error('Failed to delete user content');
+    }
+
+    // 3. Delete file tree
+    const { error: fileTreeError } = await supabase
+      .from('user_file_tree')
+      .delete()
+      .eq('user_id', userId);
+
+    if (fileTreeError) {
+      logger.error('Error deleting file tree:', fileTreeError);
+      throw new Error('Failed to delete file tree');
+    }
+
+    // 4. Delete the account
+    const { error: userError } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', userId);
+
+    if (userError) {
+      logger.error('Error deleting user account:', userError);
+      throw new Error('Failed to delete user account');
+    }
+
+    // If everything succeeds, destroy the session
+    req.session.destroy((err) => {
+      if (err) {
+        logger.error('Session destruction failed:', err);
+        return res.status(500).json({
+          success: false,
+          error: 'Account deleted but session cleanup failed'
+        });
+      }
+
+      res.clearCookie('session').json({
+        success: true,
+        message: 'Account and all associated data successfully deleted'
+      });
+    });
+
+  } catch (error) {
+    logger.error('Account deletion failed:', {
+      message: error.message,
+      userId: userId
+    });
+
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to delete account',
+      details: error.message
+    });
+  }
 });
 
 module.exports = router;

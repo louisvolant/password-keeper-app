@@ -89,6 +89,11 @@ export const register = async (username: string, email: string, password: string
   return response.data;
 };
 
+export const deleteMyAccount = async () => {
+  const response = await api.post('/api/delete_my_account', null, { withCredentials: true });
+  return response.data;
+};
+
 export const saveTemporaryContent = async ({
   strategy,
   max_date,
