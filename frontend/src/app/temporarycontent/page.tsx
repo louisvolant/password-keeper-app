@@ -1,9 +1,8 @@
 'use client';
-import { useState, useEffect, ChangeEvent } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { checkAuth, saveTemporaryContent, getUserTemporaryContent, deleteUserTemporaryContent } from '@/lib/api';
-import axios from 'axios';
 
 export default function TemporaryContentPage() {
   const router = useRouter();
