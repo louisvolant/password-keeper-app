@@ -114,6 +114,34 @@ export const saveTemporaryContent = async ({
   return response.data;
 };
 
+export const getUserTemporaryContent = async () => {
+  try {
+    const response = await api.get('/api/getusertemporarycontent', { withCredentials: true });
+    return response.data; // Expecting { success: true, links: [{ identifier, max_date }, ...] }
+  } catch (err) {
+    if (axios.isAxiosError(err) && err.response) {
+      return err.response.data;
+    }
+    throw err;
+  }
+};
+
+export const deleteUserTemporaryContent = async (identifier: string) => {
+  try {
+    const response = await api.post(
+      '/api/deleteusertemporarycontent',
+      { identifier },
+      { withCredentials: true }
+    );
+    return response.data; // Expecting { success: true }
+  } catch (err) {
+    if (axios.isAxiosError(err) && err.response) {
+      return err.response.data;
+    }
+    throw err;
+  }
+};
+
 export const getTemporaryContent = async (identifier: string, password?: string) => {
   try {
     const response = await api.get('/api/gettemporarycontent', {

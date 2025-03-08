@@ -85,6 +85,82 @@ router.post('/savetemporarycontent', authenticateUser, async (req, res) => {
   }
 });
 
+
+// Get User's produced temporary content (authentication required)
+
+// Get User's produced temporary content (authentication required)
+router.get('/getusertemporarycontent', authenticateUser, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from(TABLE_TEMPORARY_CONTENT)
+      .select('identifier, max_date')
+      .eq('user_id', req.session.user.id);
+
+    if (error) {
+      logger.error('Database fetch error in getusertemporarycontent:', {
+        message: error.message,
+        code: error.code,
+        userId: req.session.user.id,
+      });
+      return res.status(500).json({ success: false, error: 'Failed to fetch links' });
+    }
+
+    logger.info('User temporary content fetched successfully:', {
+      userId: req.session.user.id,
+      linkCount: data.length,
+    });
+    return res.json({ success: true, links: data });
+  } catch (err) {
+    logger.error('Unexpected error in getusertemporarycontent:', {
+      message: err.message,
+      stack: err.stack,
+      userId: req.session.user.id,
+    });
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
+// Delete User's specific temporary content (authentication required)
+router.post('/deleteusertemporarycontent', authenticateUser, async (req, res) => {
+  const { identifier } = req.body;
+
+  if (!identifier) {
+    logger.info('Missing identifier in deleteusertemporarycontent');
+    return res.status(400).json({ success: false, error: 'Identifier is required' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from(TABLE_TEMPORARY_CONTENT)
+      .delete()
+      .eq('identifier', identifier)
+      .eq('user_id', req.session.user.id) // Ensure only the owner can delete
+      .select('identifier')
+      .single();
+
+    if (error || !data) {
+      logger.info('Content not found or unauthorized deletion attempt:', {
+        identifier,
+        userId: req.session.user.id,
+      });
+      return res.status(404).json({ success: false, error: 'Content not found or unauthorized' });
+    }
+
+    logger.info('Temporary content deleted successfully:', {
+      identifier,
+      userId: req.session.user.id,
+    });
+    return res.json({ success: true });
+  } catch (err) {
+    logger.error('Unexpected error in deleteusertemporarycontent:', {
+      message: err.message,
+      stack: err.stack,
+      userId: req.session.user.id,
+    });
+    return res.status(500).json({ success: false, error: 'Internal server error' });
+  }
+});
+
 // Get temporary content (no authentication required)
 router.get('/gettemporarycontent', async (req, res) => {
   const { identifier, password } = req.query;
