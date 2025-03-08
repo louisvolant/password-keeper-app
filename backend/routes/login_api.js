@@ -32,13 +32,40 @@ const verifyPassword = async (password, hash) => {
 // Login route
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
+  let queryUsername = username; // default to username
+
+  // Check if username is an email address
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const isEmail = emailRegex.test(username);
+
+  if (isEmail) {
+    queryUsername = null; // reset to null to avoid username search.
+  }
 
   try {
-    const { data: userData, error } = await supabase
-      .from('users')
-      .select('*')
-      .ilike('username', username)
-      .single();
+    let userData;
+    let error;
+
+    if (isEmail) {
+      // Search by email
+      const { data, error: emailError } = await supabase
+        .from('users')
+        .select('*')
+        .ilike('email', username)
+        .single();
+      userData = data;
+      error = emailError;
+
+    } else {
+      // Search by username
+      const { data, error: usernameError } = await supabase
+        .from('users')
+        .select('*')
+        .ilike('username', username)
+        .single();
+      userData = data;
+      error = usernameError;
+    }
 
     //logger.info('userData : ' + JSON.stringify(userData));
 
