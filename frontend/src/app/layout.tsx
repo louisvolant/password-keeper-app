@@ -1,5 +1,6 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import localFont from "next/font/local";
 import "./globals.css";
 import { ReactNode } from "react";
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       >
         {children} {/* Children will include Header, Navbar, and page content */}
         <Footer />
+        <SpeedInsights/>
       </body>
     </html>
   );
