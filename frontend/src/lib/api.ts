@@ -161,3 +161,23 @@ export const getTemporaryContent = async (identifier: string, password?: string)
     throw err; // Re-throw unexpected errors
   }
 };
+
+export const requestPasswordReset = async (email: string) => {
+  const response = await api.post("/api/password_reset/request", { email });
+  return response.data;
+};
+
+export const verifyResetToken = async (token: string) => {
+  const response = await api.get("/api/password_reset/verify", {
+    params: { token },
+  });
+  return response.data;
+};
+
+export const resetPassword = async (token: string, newPassword: string) => {
+  const response = await api.post("/api/password_reset/reset", {
+    token,
+    newpassword: newPassword,
+  });
+  return response.data;
+};

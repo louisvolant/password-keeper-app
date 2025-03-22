@@ -70,14 +70,23 @@ export const LoginForm = ({ onSuccess, onError, clearError }: LoginFormProps) =>
             {isLoading ? "Logging in..." : "Login"}
           </Button>
         </form>
-        <div className="mt-4 text-center">
-          <Link href="/register">
+        <div className="mt-4 flex justify-between gap-2">
+          <Link href="/register" className="flex-1">
             <Button
               variant="outline"
               className="w-full border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               disabled={isLoading}
             >
               Register
+            </Button>
+          </Link>
+          <Link href="/passwordlost" className="flex-1">
+            <Button
+              variant="outline"
+              className="w-full border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              disabled={isLoading}
+            >
+              Lost Password?
             </Button>
           </Link>
         </div>
