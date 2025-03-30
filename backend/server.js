@@ -32,6 +32,7 @@ app.use(session({
 
 // Routes
 app.use('/api/', apiRoutes);
+app.use('/scheduler/', scheduler);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

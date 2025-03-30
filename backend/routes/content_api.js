@@ -13,7 +13,6 @@ router.get('/getcontent', authenticateUser, async (req, res) => {
 
   if (!file_path) {
     file_path="default";
-    //return res.status(400).json({ error: 'file_path is required' });
   }
 
   try {
