@@ -2,8 +2,7 @@
 
 const express = require('express');
 const router = express.Router();
-const supabase = require('../config/supabase');
-const { UsersModel, UserContentModel, UserFileTreeModel, TemporaryContentModel } = require('../dao/userDao'); // Ensure all models are imported
+const { UsersModel, UserContentModel, UserFileTreeModel, TemporaryContentModel } = require('../dao/userDao');
 const argon2 = require('argon2');
 const crypto = require('crypto');
 const winston = require('winston');
@@ -15,7 +14,6 @@ const logger = winston.createLogger({
     new winston.transports.Console()
   ]
 });
-
 
 const hashPasswordSha256 = (password) => {
   const salt = process.env.SALT_SHA_256_HASHING;
@@ -33,33 +31,19 @@ const verifyPassword = async (password, hash) => {
 // Login route
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
-  let queryUsername = username;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const isEmail = emailRegex.test(username);
 
-  if (isEmail) queryUsername = null;
-
- try {
-    let userData, error;
+  try {
+    // Query MongoDB for user by email or username
+    let userData;
     if (isEmail) {
-      const { data, error: emailError } = await supabase
-        .from('users')
-        .select('*')
-        .ilike('email', username)
-        .single();
-      userData = data;
-      error = emailError;
+      userData = await UsersModel.findOne({ email: { $regex: new RegExp(username, 'i') } });
     } else {
-      const { data, error: usernameError } = await supabase
-        .from('users')
-        .select('*')
-        .ilike('username', username)
-        .single();
-      userData = data;
-      error = usernameError;
+      userData = await UsersModel.findOne({ username: { $regex: new RegExp(username, 'i') } });
     }
 
-    if (error || !userData) {
+    if (!userData) {
       return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
 
@@ -71,21 +55,8 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
 
-    // Sync to Mongoose using supabase_id
-    await UsersModel.findOneAndUpdate(
-      { supabase_id: userData.id.toString() }, // Convert to string for consistency
-      {
-        supabase_id: userData.id.toString(),
-        username: userData.username,
-        email: userData.email,
-        hashed_password: userData.hashed_password,
-        password_version: userData.password_version,
-        created_at: userData.created_at || new Date()
-      },
-      { upsert: true, new: true }
-    );
-
-    req.session.user = { id: userData.id, username: userData.username };
+    // Set session with supabase_id (used as the primary identifier)
+    req.session.user = { id: userData.supabase_id, username: userData.username };
     return res.json({ success: true });
   } catch (err) {
     logger.error('Unexpected error in login route:', { message: err.message, stack: err.stack });
@@ -93,15 +64,20 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Rest of your routes remain unchanged
+// Check authentication status
 router.get('/check-auth', (req, res) => {
   res.json({ isAuthenticated: !!req.session.user });
 });
 
+// Logout route
 router.post('/logout', (req, res) => {
   req.session.destroy((err) => {
-    if (err) res.status(500).json({ error: 'Logout failed' });
-    else res.clearCookie('session').json({ success: true });
+    if (err) {
+      logger.error('Session destruction failed:', err);
+      res.status(500).json({ error: 'Logout failed' });
+    } else {
+      res.clearCookie('session').json({ success: true });
+    }
   });
 });
 
@@ -118,63 +94,19 @@ router.post('/delete_my_account', async (req, res) => {
   const userId = req.session.user.id;
 
   try {
-    // 1. Delete all temporary content from Supabase
-    const { error: tempContentError } = await supabase
-      .from('temporary_content')
-      .delete()
-      .eq('user_id', userId);
+    // Delete all temporary content from MongoDB
+    await TemporaryContentModel.deleteMany({ supabase_user_id: userId });
 
-    if (tempContentError) {
-      logger.error('Error deleting temporary content:', tempContentError);
-      throw new Error('Failed to delete temporary content');
-    }
+    // Delete all user content from MongoDB
+    await UserContentModel.deleteMany({ supabase_user_id: userId });
 
-    // Sync to Mongoose: Delete temporary content
-    await TemporaryContentModel.deleteMany({ user_id: userId });
+    // Delete file tree from MongoDB
+    await UserFileTreeModel.deleteMany({ supabase_user_id: userId });
 
-    // 2. Delete all content from Supabase
-    const { error: contentError } = await supabase
-      .from('user_content')
-      .delete()
-      .eq('user_id', userId);
+    // Delete the user account from MongoDB
+    await UsersModel.deleteOne({ supabase_id: userId });
 
-    if (contentError) {
-      logger.error('Error deleting user content:', contentError);
-      throw new Error('Failed to delete user content');
-    }
-
-    // Sync to Mongoose: Delete user content
-    await UserContentModel.deleteMany({ user_id: userId });
-
-    // 3. Delete file tree from Supabase
-    const { error: fileTreeError } = await supabase
-      .from('user_file_tree')
-      .delete()
-      .eq('user_id', userId);
-
-    if (fileTreeError) {
-      logger.error('Error deleting file tree:', fileTreeError);
-      throw new Error('Failed to delete file tree');
-    }
-
-    // Sync to Mongoose: Delete file tree
-    await UserFileTreeModel.deleteMany({ user_id: userId });
-
-    // 4. Delete the account from Supabase
-    const { error: userError } = await supabase
-      .from('users')
-      .delete()
-      .eq('id', userId);
-
-    if (userError) {
-      logger.error('Error deleting user account:', userError);
-      throw new Error('Failed to delete user account');
-    }
-
-    // Sync to Mongoose: Delete user
-    await UsersModel.deleteOne({ _id: userId });
-
-    // If everything succeeds, destroy the session
+    // Destroy the session
     req.session.destroy((err) => {
       if (err) {
         logger.error('Session destruction failed:', err);

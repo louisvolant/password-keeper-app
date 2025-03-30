@@ -1,7 +1,7 @@
 // routes/registration_api.js
 const express = require('express');
 const router = express.Router();
-const supabase = require('../config/supabase');
+const { UsersModel, UserFileTreeModel, UserContentModel } = require('../dao/userDao');
 const argon2 = require('argon2');
 const winston = require('winston');
 const logger = winston.createLogger({
@@ -26,58 +26,62 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    const { data: existingUser, error: checkError } = await supabase
-      .from('users')
-      .select('id')
-      .or(`username.eq.${username},email.eq.${email}`)
-      .maybeSingle();
+    // Check for existing user in MongoDB
+    const existingUser = await UsersModel.findOne({
+      $or: [{ username }, { email }]
+    });
 
-    if (checkError || existingUser) {
-      return res.status(existingUser ? 409 : 500).json({ error: existingUser ? 'Username or email already exists' : 'Server error' });
+    if (existingUser) {
+      return res.status(409).json({ error: 'Username or email already exists' });
     }
 
     const hashedPassword = await hashPasswordArgon2(password);
     const createdAt = new Date();
 
-    const { data: newUser, error: insertError } = await supabase
-      .from('users')
-      .insert({ username, email, hashed_password: hashedPassword, password_version: 1, created_at: createdAt.toISOString() })
-      .select('id')
-      .single();
+    // Create new user in MongoDB
+    const newUser = await UsersModel.create({
+      supabase_id: null,
+      username,
+      email,
+      hashed_password: hashedPassword,
+      password_version: 1,
+      created_at: createdAt
+    });
 
-    if (insertError) {
-      logger.error('Insert error:', insertError);
-      return res.status(500).json({ error: 'Failed to register user' });
-    }
+    // Use MongoDB-generated _id as the user ID if supabase_id isn't required
+    const userId = newUser._id.toString();
 
-    // Sync to Mongoose
-    const mongooseUser = await UsersModel.findOneAndUpdate(
-      { supabase_id: newUser.id.toString() }, // Convert to string for consistency
-      {
-        supabase_id: newUser.id.toString(),
-       username, email, hashed_password: hashedPassword, password_version: 1, created_at: createdAt },
-      { upsert: true, new: true }
-    );
-
-    await supabase.from('user_file_tree').insert({ user_id: newUser.id, file_tree: '["default"]' });
+    // Initialize user file tree in MongoDB
     await UserFileTreeModel.findOneAndUpdate(
-      { user_id: newUser.id },
-      { user_id: newUser.id, file_tree: '["default"]', created_at: createdAt, updated_at: createdAt },
+      { supabase_user_id: userId },
+      {
+        supabase_user_id: userId,
+        file_tree: '["default"]',
+        created_at: createdAt,
+        updated_at: createdAt
+      },
       { upsert: true, new: true }
     );
 
-    await supabase.from('user_content').insert({ user_id: newUser.id, file_path: 'default', encoded_content: '' });
+    // Initialize user content in MongoDB
     await UserContentModel.findOneAndUpdate(
-      { user_id: newUser.id, file_path: 'default' },
-      { user_id: newUser.id, file_path: 'default', encoded_content: '', created_at: createdAt, updated_at: createdAt },
+      { supabase_user_id: userId, file_path: 'default' },
+      {
+        supabase_user_id: userId,
+        file_path: 'default',
+        encoded_content: '',
+        created_at: createdAt,
+        updated_at: createdAt
+      },
       { upsert: true, new: true }
     );
 
-    req.session.user = { id: newUser.id, username };
+    // Set session with the MongoDB-generated ID
+    req.session.user = { id: userId, username };
     res.json({ success: true });
   } catch (error) {
     logger.error('Registration error:', error);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: 'Server error', details: error.message });
   }
 });
 

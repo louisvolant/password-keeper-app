@@ -1,8 +1,7 @@
 //routes/password_api.js
 const express = require('express');
 const router = express.Router();
-const supabase = require('../config/supabase');
-const { PasswordResetTokensModel, UsersModel } = require('../dao/userDao'); // Import necessary models
+const { PasswordResetTokensModel, UsersModel } = require('../dao/userDao');
 const argon2 = require('argon2');
 const crypto = require('crypto');
 const winston = require('winston');
@@ -30,36 +29,26 @@ router.post('/password_reset/request', async (req, res) => {
   const { email } = req.body;
 
   try {
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id, email')
-      .eq('email', email)
-      .single();
+    // Fetch user from MongoDB
+    const user = await UsersModel.findOne({ email });
 
-    if (error || !user) {
+    if (!user) {
+      // Return success to prevent enumeration attacks
       return res.json({ success: true });
     }
 
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    const { error: tokenError } = await supabase
-      .from('password_reset_tokens')
-      .insert({
-        user_id: user.id,
-        token,
-        expires_at: expiresAt.toISOString()
-      });
-
-    if (tokenError) {
-      logger.error('Failed to store reset token:', tokenError);
-      return res.status(500).json({ success: false, error: 'Internal server error' });
-    }
-
-    // Sync to Mongoose
+    // Store reset token in MongoDB
     await PasswordResetTokensModel.findOneAndUpdate(
-      { user_id: user.id, token },
-      { user_id: user.id, token, expires_at: expiresAt, created_at: new Date() },
+      { supabase_user_id: user.supabase_id, token },
+      {
+        supabase_user_id: user.supabase_id,
+        token,
+        expires_at: expiresAt,
+        created_at: new Date()
+      },
       { upsert: true, new: true }
     );
 
@@ -86,27 +75,18 @@ router.post('/password_reset/request', async (req, res) => {
     return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
+
 // Verify reset token
 router.get('/password_reset/verify', async (req, res) => {
   const { token } = req.query;
 
   try {
-    const { data, error } = await supabase
-      .from('password_reset_tokens')
-      .select('user_id, expires_at')
-      .eq('token', token)
-      .single();
+    // Fetch token from MongoDB
+    const tokenDoc = await PasswordResetTokensModel.findOne({ token });
 
-    if (error || !data || new Date(data.expires_at) < new Date()) {
+    if (!tokenDoc || new Date(tokenDoc.expires_at) < new Date()) {
       return res.json({ success: false, error: 'Invalid or expired token' });
     }
-
-    // Sync to Mongoose (ensure token exists in Mongoose if it exists in Supabase)
-    await PasswordResetTokensModel.findOneAndUpdate(
-      { token },
-      { user_id: data.user_id, token, expires_at: new Date(data.expires_at), created_at: new Date() },
-      { upsert: true, new: true }
-    );
 
     return res.json({ success: true });
   } catch (err) {
@@ -120,52 +100,29 @@ router.post('/password_reset/reset', async (req, res) => {
   const { token, newpassword } = req.body;
 
   try {
-    // Verify token
-    const { data: tokenData, error: tokenError } = await supabase
-      .from('password_reset_tokens')
-      .select('user_id, expires_at')
-      .eq('token', token)
-      .single();
+    // Verify token in MongoDB
+    const tokenDoc = await PasswordResetTokensModel.findOne({ token });
 
-    if (tokenError || !tokenData || new Date(tokenData.expires_at) < new Date()) {
+    if (!tokenDoc || new Date(tokenDoc.expires_at) < new Date()) {
       return res.status(400).json({ success: false, error: 'Invalid or expired token' });
     }
 
     // Hash new password
     const hashedPassword = await hashPasswordArgon2(newpassword);
 
-    // Update password in Supabase
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({
-        hashed_password: hashedPassword,
-        password_version: 1
-      })
-      .eq('id', tokenData.user_id);
+    // Update user password in MongoDB
+    const userUpdate = await UsersModel.findOneAndUpdate(
+      { supabase_id: tokenDoc.supabase_user_id },
+      { hashed_password: hashedPassword, password_version: 1 },
+      { new: true }
+    );
 
-    if (updateError) {
-      logger.error('Failed to update password:', updateError);
+    if (!userUpdate) {
+      logger.error('Failed to update password: User not found');
       return res.status(500).json({ success: false, error: 'Failed to reset password' });
     }
 
-    // Sync to Mongoose: Update user password
-    await UsersModel.findOneAndUpdate(
-      { supabase_id: userData.id.toString() }, // Convert to string for consistency
-      {
-        supabase_id: userData.id.toString(),
-       hashed_password: hashedPassword,
-       password_version: 1
-       },
-      { upsert: true, new: true } // Upsert in case user doesn't exist yet in Mongoose
-    );
-
-    // Delete used token in Supabase
-    await supabase
-      .from('password_reset_tokens')
-      .delete()
-      .eq('token', token);
-
-    // Sync to Mongoose: Delete used token
+    // Delete used token in MongoDB
     await PasswordResetTokensModel.deleteOne({ token });
 
     return res.json({ success: true });
