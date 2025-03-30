@@ -1,7 +1,7 @@
-// routes/temporary_content_api.js
 const express = require('express');
 const router = express.Router();
 const supabase = require('../config/supabase');
+const { TemporaryContentModel } = require('../dao/userDao');
 const argon2 = require('argon2');
 const { v4: uuidv4 } = require('uuid');
 const winston = require('winston');
@@ -30,63 +30,55 @@ const authenticateUser = (req, res, next) => {
 router.post('/savetemporarycontent', authenticateUser, async (req, res) => {
   const { strategy, max_date, password, iv, encoded_content } = req.body;
 
-  if (!strategy || !max_date || !encoded_content || !iv) {
-    logger.info('Missing required fields in savetemporarycontent');
-    return res.status(400).json({ success: false, error: 'Missing required fields' });
-  }
-
-  if (!['oneread', 'multipleread'].includes(strategy)) {
-    logger.info('Invalid strategy provided:', strategy);
-    return res.status(400).json({ success: false, error: 'Invalid strategy' });
+  if (!strategy || !max_date || !encoded_content || !iv || !['oneread', 'multipleread'].includes(strategy)) {
+    return res.status(400).json({ success: false, error: 'Invalid input' });
   }
 
   try {
     const identifier = uuidv4();
-    const hashedPassword = password ? await argon2.hash(password, {
-      type: argon2.argon2id,
-      memoryCost: 2 ** 16,
-      timeCost: 3,
-      parallelism: 1
-    }) : null;
+    const hashedPassword = password ? await argon2.hash(password, { type: argon2.argon2id, memoryCost: 2 ** 16, timeCost: 3, parallelism: 1 }) : null;
+    const createdAt = new Date();
 
     const { data, error } = await supabase
       .from(TABLE_TEMPORARY_CONTENT)
       .insert({
-        created_at: new Date().toISOString(),
+        created_at: createdAt.toISOString(),
         identifier,
         hashed_password: hashedPassword,
-        max_date: max_date,
+        max_date,
         encoded_content,
-        iv, // Store IV with the content
+        iv,
         user_id: req.session.user.id
       })
       .select('identifier')
       .single();
 
     if (error) {
-      logger.error('Database insert error in savetemporarycontent:', {
-        message: error.message,
-        code: error.code,
-        hint: error.hint,
-        details: error.details
-      });
+      logger.error('Database insert error:', error);
       return res.status(500).json({ success: false, error: 'Failed to save content' });
     }
 
-    logger.info('Temporary content saved successfully:', { identifier, userId: req.session.user.id });
+    // Sync to Mongoose
+    await TemporaryContentModel.findOneAndUpdate(
+      { identifier },
+      {
+        supabase_user_id: req.session.user.id.toString(), // Convert to string for consistency
+        identifier,
+        hashed_password: hashedPassword,
+        max_date,
+        encoded_content,
+        iv,
+        created_at: createdAt
+      },
+      { upsert: true, new: true }
+    );
+
     return res.json({ success: true, identifier: data.identifier });
   } catch (err) {
-    logger.error('Unexpected error in savetemporarycontent:', {
-      message: err.message,
-      stack: err.stack,
-      userId: req.session.user.id
-    });
+    logger.error('Unexpected error:', err);
     return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
-
-
-// Get User's produced temporary content (authentication required)
 
 // Get User's produced temporary content (authentication required)
 router.get('/getusertemporarycontent', authenticateUser, async (req, res) => {
@@ -103,6 +95,20 @@ router.get('/getusertemporarycontent', authenticateUser, async (req, res) => {
         userId: req.session.user.id,
       });
       return res.status(500).json({ success: false, error: 'Failed to fetch links' });
+    }
+
+    // Sync to Mongoose
+    for (const item of data) {
+      await TemporaryContentModel.findOneAndUpdate(
+        { identifier: item.identifier },
+        {
+          supabase_user_id: req.session.user.id.toString(),
+          identifier: item.identifier,
+          max_date: item.max_date,
+          created_at: new Date()
+        },
+        { upsert: true, new: true }
+      );
     }
 
     logger.info('User temporary content fetched successfully:', {
@@ -134,7 +140,7 @@ router.post('/deleteusertemporarycontent', authenticateUser, async (req, res) =>
       .from(TABLE_TEMPORARY_CONTENT)
       .delete()
       .eq('identifier', identifier)
-      .eq('user_id', req.session.user.id) // Ensure only the owner can delete
+      .eq('user_id', req.session.user.id)
       .select('identifier')
       .single();
 
@@ -145,6 +151,12 @@ router.post('/deleteusertemporarycontent', authenticateUser, async (req, res) =>
       });
       return res.status(404).json({ success: false, error: 'Content not found or unauthorized' });
     }
+
+    // Sync to Mongoose
+    await TemporaryContentModel.deleteOne({
+      identifier,
+      supabase_user_id: req.session.user.id.toString()
+    });
 
     logger.info('Temporary content deleted successfully:', {
       identifier,
@@ -184,6 +196,7 @@ router.get('/gettemporarycontent', async (req, res) => {
     const now = new Date();
     if (new Date(data.max_date) < now) {
       await supabase.from(TABLE_TEMPORARY_CONTENT).delete().eq('identifier', identifier);
+      await TemporaryContentModel.deleteOne({ identifier });
       logger.info('Expired content deleted:', { identifier });
       return res.status(410).json({ success: false, error: 'Content has expired' });
     }
@@ -198,6 +211,21 @@ router.get('/gettemporarycontent', async (req, res) => {
       }
     }
 
+    // Sync to Mongoose
+    await TemporaryContentModel.findOneAndUpdate(
+      { identifier },
+      {
+        supabase_user_id: data.user_id.toString(),
+        identifier,
+        hashed_password: data.hashed_password,
+        max_date: data.max_date,
+        encoded_content: data.encoded_content,
+        iv: data.iv,
+        created_at: data.created_at || new Date()
+      },
+      { upsert: true, new: true }
+    );
+
     const response = {
       success: true,
       content: data.encoded_content,
@@ -206,6 +234,7 @@ router.get('/gettemporarycontent', async (req, res) => {
 
     if (data.strategy === 'oneread') {
       await supabase.from(TABLE_TEMPORARY_CONTENT).delete().eq('identifier', identifier);
+      await TemporaryContentModel.deleteOne({ identifier });
       logger.info('One-read content deleted after access:', { identifier });
     }
 

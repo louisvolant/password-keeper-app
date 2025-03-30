@@ -3,6 +3,7 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../config/supabase');
+const { UsersModel, UserContentModel, UserFileTreeModel, TemporaryContentModel } = require('../dao/userDao'); // Ensure all models are imported
 const argon2 = require('argon2');
 const crypto = require('crypto');
 const winston = require('winston');
@@ -32,22 +33,15 @@ const verifyPassword = async (password, hash) => {
 // Login route
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
-  let queryUsername = username; // default to username
-
-  // Check if username is an email address
+  let queryUsername = username;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const isEmail = emailRegex.test(username);
 
-  if (isEmail) {
-    queryUsername = null; // reset to null to avoid username search.
-  }
+  if (isEmail) queryUsername = null;
 
-  try {
-    let userData;
-    let error;
-
+ try {
+    let userData, error;
     if (isEmail) {
-      // Search by email
       const { data, error: emailError } = await supabase
         .from('users')
         .select('*')
@@ -55,9 +49,7 @@ router.post('/login', async (req, res) => {
         .single();
       userData = data;
       error = emailError;
-
     } else {
-      // Search by username
       const { data, error: usernameError } = await supabase
         .from('users')
         .select('*')
@@ -67,130 +59,37 @@ router.post('/login', async (req, res) => {
       error = usernameError;
     }
 
-    //logger.info('userData : ' + JSON.stringify(userData));
-
-    if (error) {
-      logger.error('Database query error', {
-        message: error.message,
-        code: error.code,
-        hint: error.hint,
-        details: error.details
-      });
-
-      // Check if it's a timeout error specifically
-      if (error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
-        return res.status(503).json({
-          success: false,
-          error: 'Service temporarily unavailable due to timeout'
-        });
-      }
-
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid credentials'
-      });
+    if (error || !userData) {
+      return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
-
-    if (!userData) {
-      logger.info('No user found for username', username);
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid credentials'
-      });
-    }
-
-    logger.info('userData.password_version : ' + userData.password_version);
 
     const isValidPassword = userData.password_version === 1
       ? await verifyPassword(password, userData.hashed_password)
       : hashPasswordSha256(password) === userData.hashed_password;
 
     if (!isValidPassword) {
-      logger.info('Password verification failed for username:' + username);
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid credentials'
-      });
+      return res.status(401).json({ success: false, error: 'Invalid credentials' });
     }
 
-    req.session.user = { id: userData.id, username: username };
+    // Sync to Mongoose using supabase_id
+    await UsersModel.findOneAndUpdate(
+      { supabase_id: userData.id.toString() }, // Convert to string for consistency
+      {
+        supabase_id: userData.id.toString(),
+        username: userData.username,
+        email: userData.email,
+        hashed_password: userData.hashed_password,
+        password_version: userData.password_version,
+        created_at: userData.created_at || new Date()
+      },
+      { upsert: true, new: true }
+    );
+
+    req.session.user = { id: userData.id, username: userData.username };
     return res.json({ success: true });
-
   } catch (err) {
-    logger.error('Unexpected error in login route:', {
-      message: err.message,
-      stack: err.stack,
-      username // Include for debugging, remove in production if sensitive
-    });
-    return res.status(500).json({
-      success: false,
-      error: 'Internal server error'
-    });
-  }
-});
-
-// Change Password route
-router.post('/changepassword', async (req, res) => {
-  const { newpassword } = req.body;
-
-  // Check if user is authenticated
-  if (!req.session.user) {
-    logger.info('Attempted password change without authentication');
-    return res.status(401).json({
-      success: false,
-      error: 'Unauthorized - Please log in first'
-    });
-  }
-
-  try {
-    // Hash the new password
-    const hashedPassword = await hashPasswordArgon2(newpassword);
-
-    // Update the password in the database
-    const { data, error } = await supabase
-      .from('users')
-      .update({
-        hashed_password: hashedPassword,
-        password_version: 1
-      })
-      .eq('id', req.session.user.id)
-      .select()
-      .single();
-
-    if (error) {
-      logger.error('Database update error in changepassword:', {
-        message: error.message,
-        code: error.code,
-        hint: error.hint,
-        details: error.details
-      });
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to update password'
-      });
-    }
-
-    if (!data) {
-      logger.info('No user found for update:', req.session.user.id);
-      return res.status(404).json({
-        success: false,
-        error: 'User not found'
-      });
-    }
-
-    logger.info('Password changed successfully for user:', req.session.user.username);
-    return res.json({ success: true });
-
-  } catch (err) {
-    logger.error('Unexpected error in changepassword route:', {
-      message: err.message,
-      stack: err.stack,
-      userId: req.session.user.id
-    });
-    return res.status(500).json({
-      success: false,
-      error: 'Internal server error'
-    });
+    logger.error('Unexpected error in login route:', { message: err.message, stack: err.stack });
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 });
 
@@ -206,8 +105,8 @@ router.post('/logout', (req, res) => {
   });
 });
 
+// Route to delete account
 router.post('/delete_my_account', async (req, res) => {
-  // Check if user is authenticated
   if (!req.session.user) {
     logger.info('Attempted account deletion without authentication');
     return res.status(401).json({
@@ -219,7 +118,7 @@ router.post('/delete_my_account', async (req, res) => {
   const userId = req.session.user.id;
 
   try {
-    // 1. Delete all temporary content
+    // 1. Delete all temporary content from Supabase
     const { error: tempContentError } = await supabase
       .from('temporary_content')
       .delete()
@@ -230,7 +129,10 @@ router.post('/delete_my_account', async (req, res) => {
       throw new Error('Failed to delete temporary content');
     }
 
-    // 2. Delete all content
+    // Sync to Mongoose: Delete temporary content
+    await TemporaryContentModel.deleteMany({ user_id: userId });
+
+    // 2. Delete all content from Supabase
     const { error: contentError } = await supabase
       .from('user_content')
       .delete()
@@ -241,7 +143,10 @@ router.post('/delete_my_account', async (req, res) => {
       throw new Error('Failed to delete user content');
     }
 
-    // 3. Delete file tree
+    // Sync to Mongoose: Delete user content
+    await UserContentModel.deleteMany({ user_id: userId });
+
+    // 3. Delete file tree from Supabase
     const { error: fileTreeError } = await supabase
       .from('user_file_tree')
       .delete()
@@ -252,7 +157,10 @@ router.post('/delete_my_account', async (req, res) => {
       throw new Error('Failed to delete file tree');
     }
 
-    // 4. Delete the account
+    // Sync to Mongoose: Delete file tree
+    await UserFileTreeModel.deleteMany({ user_id: userId });
+
+    // 4. Delete the account from Supabase
     const { error: userError } = await supabase
       .from('users')
       .delete()
@@ -262,6 +170,9 @@ router.post('/delete_my_account', async (req, res) => {
       logger.error('Error deleting user account:', userError);
       throw new Error('Failed to delete user account');
     }
+
+    // Sync to Mongoose: Delete user
+    await UsersModel.deleteOne({ _id: userId });
 
     // If everything succeeds, destroy the session
     req.session.destroy((err) => {
@@ -278,7 +189,6 @@ router.post('/delete_my_account', async (req, res) => {
         message: 'Account and all associated data successfully deleted'
       });
     });
-
   } catch (error) {
     logger.error('Account deletion failed:', {
       message: error.message,

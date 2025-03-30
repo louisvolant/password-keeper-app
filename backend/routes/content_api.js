@@ -3,17 +3,15 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../config/supabase');
+const { UserContentModel } = require('../dao/userDao');
 const authenticateUser = require('../middleware/auth');
 
 const TABLE_USER_CONTENT = "user_content";
 
 // Route to retrieve content
 router.get('/getcontent', authenticateUser, async (req, res) => {
-  const { file_path } = req.query; // On récupère file_path depuis les paramètres
-
-  if (!file_path) {
-    file_path="default";
-  }
+  let { file_path } = req.query;
+  if (!file_path) file_path = "default";
 
   try {
     let { data, error } = await supabase
@@ -26,15 +24,29 @@ router.get('/getcontent', authenticateUser, async (req, res) => {
     if (error || !data) {
       const { error: insertError } = await supabase
         .from(TABLE_USER_CONTENT)
-        .insert([{ user_id: req.user.id, encoded_content: '', file_path: file_path }]);
+        .insert([{ user_id: req.user.id, encoded_content: '', file_path }]);
 
       if (insertError) {
         console.error('Insert error:', insertError);
         return res.status(500).json({ error: 'Error creating content' });
       }
 
+      // Insert into Mongoose
+      await UserContentModel.findOneAndUpdate(
+        { supabase_user_id: req.user.id, file_path },
+        { supabase_user_id: req.user.id, encoded_content: '', file_path, created_at: new Date(), updated_at: new Date() },
+        { upsert: true, new: true }
+      );
+
       return res.json({ encoded_content: '', file_path: 'default' });
     }
+
+    // Sync to Mongoose
+    await UserContentModel.findOneAndUpdate(
+      { supabase_user_id: req.user.id, file_path: data.file_path },
+      { encoded_content: data.encoded_content, updated_at: new Date() },
+      { upsert: true, new: true }
+    );
 
     res.json({ encoded_content: data.encoded_content, file_path: data.file_path });
   } catch (error) {
@@ -55,20 +67,18 @@ router.post('/updatecontent', authenticateUser, async (req, res) => {
       .from(TABLE_USER_CONTENT)
       .select('*')
       .eq('user_id', req.user.id)
-      .eq('file_path', file_path) // ✅ Filtrer aussi par file_path
+      .eq('file_path', file_path)
       .single();
 
     let result;
+    const updatedAt = new Date();
 
     if (existingContent) {
       result = await supabase
         .from(TABLE_USER_CONTENT)
-        .update({
-          encoded_content,
-          updated_at: new Date().toISOString()
-        })
+        .update({ encoded_content, updated_at: updatedAt.toISOString() })
         .eq('user_id', req.user.id)
-        .eq('file_path', file_path); // ✅ Assurer qu'on met à jour le bon fichier
+        .eq('file_path', file_path);
     } else {
       result = await supabase
         .from(TABLE_USER_CONTENT)
@@ -76,8 +86,8 @@ router.post('/updatecontent', authenticateUser, async (req, res) => {
           user_id: req.user.id,
           encoded_content,
           file_path,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          created_at: updatedAt.toISOString(),
+          updated_at: updatedAt.toISOString()
         });
     }
 
@@ -85,6 +95,13 @@ router.post('/updatecontent', authenticateUser, async (req, res) => {
       console.error('Supabase error:', result.error);
       return res.status(500).json({ error: 'Save error', details: result.error.message });
     }
+
+    // Sync to Mongoose
+    await UserContentModel.findOneAndUpdate(
+      { supabase_user_id: req.user.id, file_path },
+      { encoded_content, updated_at: updatedAt },
+      { upsert: true, new: true }
+    );
 
     res.json({ success: true });
   } catch (error) {
