@@ -41,17 +41,17 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Theme toggle - Hidden on mobile, visible on desktop */}
-        <button
-          onClick={toggleTheme}
-          className="hidden md:block py-2 px-4 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
-        >
-          Switch to {theme === "light" ? "Dark" : "Light"} Mode
-        </button>
-
-        {/* Copyright */}
-        <div className="mt-4">
-          © {new Date().getFullYear()} Securaised.net. All rights reserved.
+        {/* Copyright and Theme toggle wrapper */}
+        <div className="mt-4 flex justify-center items-center flex-wrap gap-4">
+          <div>
+            © {new Date().getFullYear()} Securaised.net. All rights reserved.
+          </div>
+          <button
+            onClick={toggleTheme}
+            className="hidden md:block py-2 px-4 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+          >
+            Switch to {theme === "light" ? "Dark" : "Light"} Mode
+          </button>
         </div>
       </div>
     </footer>
