@@ -1,4 +1,3 @@
-// src/app/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -97,31 +96,39 @@ export default function HomePage() {
     >
       <main className="container mx-auto p-4 max-w-2xl">
         {isAuthenticated === true ? (
-          <div className="flex flex-col gap-4">
-            <Link href="/securecontent">
-              <Button className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
-                <Lock className="w-4 h-4" />
-                Access Secure Content
+          <div className="flex flex-col gap-6">
+            {/* Action Buttons Group */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Link href="/securecontent">
+                <Button className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                  <Lock className="w-4 h-4" />
+                  Access Secure Content
+                </Button>
+              </Link>
+              <Link href="/temporarycontent">
+                <Button className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                  <Lock className="w-4 h-4" />
+                  Create Temporary Link
+                </Button>
+              </Link>
+              <Link href="/passwordchange">
+                <Button className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
+                  Change Password
+                </Button>
+              </Link>
+            </div>
+
+            {/* Delete Button Section */}
+            <div className="mt-4">
+              <Button
+                onClick={handleAccountDeletion}
+                disabled={isDeleting}
+                variant="outline"
+                className="w-full border-red-500 text-red-500 hover:bg-red-50 hover:border-red-600 hover:text-red-600 rounded-lg py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? "Deleting..." : "Delete My Account"}
               </Button>
-            </Link>
-            <Link href="/temporarycontent">
-              <Button className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
-                <Lock className="w-4 h-4" />
-                Create Temporary Link to share
-              </Button>
-            </Link>
-            <Link href="/passwordchange">
-              <Button className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200">
-                Change password
-              </Button>
-            </Link>
-            <Button
-              onClick={handleAccountDeletion}
-              disabled={isDeleting}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isDeleting ? "Deleting..." : "Delete my account"}
-            </Button>
+            </div>
           </div>
         ) : (
           <LoginForm
