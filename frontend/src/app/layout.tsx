@@ -43,7 +43,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900`}
       >
-        {children} {/* Children will include Header, Navbar, and page content */}
+        {children}
         <Footer />
         <SpeedInsights/>
       </body>
