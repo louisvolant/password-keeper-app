@@ -1,4 +1,4 @@
-//routes/password_api.js
+// routes/password_api.js
 const express = require('express');
 const router = express.Router();
 const { PasswordResetTokensModel, UsersModel } = require('../dao/userDao');
@@ -6,6 +6,7 @@ const argon2 = require('argon2');
 const crypto = require('crypto');
 const winston = require('winston');
 const Mailjet = require('node-mailjet');
+
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.json(),
@@ -24,9 +25,8 @@ const hashPasswordArgon2 = async (password) => {
   return await argon2.hash(password, { type: argon2.argon2id, memoryCost: 2 ** 16, timeCost: 3, parallelism: 1 });
 };
 
-
 // Change Password route
-router.post('/changepassword', async (req, res) => {
+router.post('/password/change', async (req, res) => {
   const { newpassword } = req.body;
 
   // Check if user is authenticated
@@ -42,31 +42,14 @@ router.post('/changepassword', async (req, res) => {
     // Hash the new password
     const hashedPassword = await hashPasswordArgon2(newpassword);
 
-    // Update the password in the database
-    const { data, error } = await supabase
-      .from('users')
-      .update({
-        hashed_password: hashedPassword,
-        password_version: 1
-      })
-      .eq('id', req.session.user.id)
-      .select()
-      .single();
+    // Update the password in MongoDB using Mongoose
+    const updatedUser = await UsersModel.findOneAndUpdate(
+      { supabase_id: req.session.user.id },
+      { hashed_password: hashedPassword, password_version: 1 },
+      { new: true } // Return the updated document
+    );
 
-    if (error) {
-      logger.error('Database update error in changepassword:', {
-        message: error.message,
-        code: error.code,
-        hint: error.hint,
-        details: error.details
-      });
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to update password'
-      });
-    }
-
-    if (!data) {
+    if (!updatedUser) {
       logger.info('No user found for update:', req.session.user.id);
       return res.status(404).json({
         success: false,
@@ -76,7 +59,6 @@ router.post('/changepassword', async (req, res) => {
 
     logger.info('Password changed successfully for user:', req.session.user.username);
     return res.json({ success: true });
-
   } catch (err) {
     logger.error('Unexpected error in changepassword route:', {
       message: err.message,
@@ -90,9 +72,8 @@ router.post('/changepassword', async (req, res) => {
   }
 });
 
-
 // Request password reset
-router.post('/password_reset/request', async (req, res) => {
+router.post('/password/reset/request', async (req, res) => {
   const { email } = req.body;
 
   try {
@@ -144,7 +125,7 @@ router.post('/password_reset/request', async (req, res) => {
 });
 
 // Verify reset token
-router.get('/password_reset/verify', async (req, res) => {
+router.get('/password/reset/verify', async (req, res) => {
   const { token } = req.query;
 
   try {
@@ -163,7 +144,7 @@ router.get('/password_reset/verify', async (req, res) => {
 });
 
 // Reset password
-router.post('/password_reset/reset', async (req, res) => {
+router.post('/password/reset/reset', async (req, res) => {
   const { token, newpassword } = req.body;
 
   try {

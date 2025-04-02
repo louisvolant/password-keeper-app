@@ -40,11 +40,7 @@ export const login = async (username: string, password: string) => {
 };
 
 export const changePassword = async (newpassword: string) => {
-  const response = await api.post(
-    '/api/changepassword',
-    { newpassword },
-    { withCredentials: true }
-  );
+  const response = await api.post('/api/password/change', { newpassword }, { withCredentials: true });
   return response.data;
 };
 
@@ -163,19 +159,19 @@ export const getTemporaryContent = async (identifier: string, password?: string)
 };
 
 export const requestPasswordReset = async (email: string) => {
-  const response = await api.post("/api/password_reset/request", { email });
+  const response = await api.post("/api/password/reset/request", { email });
   return response.data;
 };
 
 export const verifyResetToken = async (token: string) => {
-  const response = await api.get("/api/password_reset/verify", {
+  const response = await api.get("/api/password/reset/verify", {
     params: { token },
   });
   return response.data;
 };
 
 export const resetPassword = async (token: string, newPassword: string) => {
-  const response = await api.post("/api/password_reset/reset", {
+  const response = await api.post("/api/password/reset/reset", {
     token,
     newpassword: newPassword,
   });
