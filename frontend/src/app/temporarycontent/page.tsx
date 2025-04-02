@@ -1,13 +1,11 @@
 // src/app/temporarycontent/page.tsx
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { saveTemporaryContent, getUserTemporaryContent, deleteUserTemporaryContent } from '@/lib/api';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function TemporaryContentPage() {
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{ message: string; link: string } | null>(null);
