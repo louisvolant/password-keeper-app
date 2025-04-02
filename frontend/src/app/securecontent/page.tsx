@@ -1,32 +1,26 @@
 // src/app/securecontent/page.tsx
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { checkAuth, getContent, getFileTree, logout } from "@/lib/api";
+import { useRouter } from 'next/navigation';
+import { getContent, getFileTree, logout } from "@/lib/api";
 import { ContentEditor } from "@/components/ContentEditor";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import ClientLayout from "../ClientLayout"; // Import ClientLayout
+import ClientLayout from "../ClientLayout";
+import ProtectedRoute from '@/components/ProtectedRoute';
 import FileTree from "@/components/FileTree";
 
 export default function SecureContentPage() {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [encodedContent, setEncodedContent] = useState<string | null>(null);
   const [fileList, setFileList] = useState<string[]>([]);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
 
+  // Fetch files on mount (no auth check needed, ProtectedRoute handles it)
   useEffect(() => {
-    const checkAuthAndFetchFiles = async () => {
+    const fetchFiles = async () => {
       try {
-        const authResponse = await checkAuth();
-        if (!authResponse?.isAuthenticated) {
-          setIsAuthenticated(false);
-          return router.push("/");
-        }
-        setIsAuthenticated(true);
-
         const filesResponse = await getFileTree();
         if (filesResponse.file_tree) {
           const parsedFiles = JSON.parse(filesResponse.file_tree);
@@ -40,23 +34,21 @@ export default function SecureContentPage() {
           setError("Failed to fetch files");
         }
       } catch (err) {
-        console.error("Error in auth or file fetch:", err);
-        setIsAuthenticated(false);
-        setError("Authentication failed");
-        router.push("/");
+        console.error("Error fetching files:", err);
+        setError("Failed to load content");
       } finally {
         setIsLoading(false);
       }
     };
 
-    checkAuthAndFetchFiles();
-  }, [router]);
+    fetchFiles();
+  }, []);
 
   useEffect(() => {
-    if (selectedFilePath && isAuthenticated) {
+    if (selectedFilePath) {
       fetchContent(selectedFilePath);
     }
-  }, [selectedFilePath, isAuthenticated]);
+  }, [selectedFilePath]);
 
   const fetchContent = async (filePath: string) => {
     try {
@@ -71,7 +63,6 @@ export default function SecureContentPage() {
   const handleLogout = async () => {
     try {
       await logout();
-      setIsAuthenticated(false);
       router.push("/");
     } catch (err) {
       console.error("Logout failed:", err);
@@ -90,38 +81,39 @@ export default function SecureContentPage() {
       </ClientLayout>
     );
   }
-  if (!isAuthenticated) return null;
 
   return (
-    <ClientLayout isAuthenticated={true} onLogout={handleLogout}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-        <div className="container mx-auto p-4">
-          {error ? (
-            <Alert>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          ) : (
-            <div className="lg:grid lg:grid-cols-[300px,1fr] lg:gap-6">
-              <div className="mb-4 max-w-2xl lg:mb-0">
-                {fileList.length > 0 && (
-                  <FileTree
-                    files={fileList}
-                    selectedFile={selectedFilePath}
-                    onSelectFile={setSelectedFilePath}
-                    onUpdateFiles={handleUpdateFiles}
+    <ProtectedRoute>
+      <ClientLayout isAuthenticated={true} onLogout={handleLogout}>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+          <div className="container mx-auto p-4">
+            {error ? (
+              <Alert>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            ) : (
+              <div className="lg:grid lg:grid-cols-[300px,1fr] lg:gap-6">
+                <div className="mb-4 max-w-2xl lg:mb-0">
+                  {fileList.length > 0 && (
+                    <FileTree
+                      files={fileList}
+                      selectedFile={selectedFilePath}
+                      onSelectFile={setSelectedFilePath}
+                      onUpdateFiles={handleUpdateFiles}
+                    />
+                  )}
+                </div>
+                <div className="max-w-2xl">
+                  <ContentEditor
+                    filePath={selectedFilePath || ""}
+                    initialContent={encodedContent || ""}
                   />
-                )}
+                </div>
               </div>
-              <div className="max-w-2xl">
-                <ContentEditor
-                  filePath={selectedFilePath || ""}
-                  initialContent={encodedContent || ""}
-                />
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
-    </ClientLayout>
+      </ClientLayout>
+    </ProtectedRoute>
   );
 }

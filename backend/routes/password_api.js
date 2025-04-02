@@ -24,6 +24,73 @@ const hashPasswordArgon2 = async (password) => {
   return await argon2.hash(password, { type: argon2.argon2id, memoryCost: 2 ** 16, timeCost: 3, parallelism: 1 });
 };
 
+
+// Change Password route
+router.post('/changepassword', async (req, res) => {
+  const { newpassword } = req.body;
+
+  // Check if user is authenticated
+  if (!req.session.user) {
+    logger.info('Attempted password change without authentication');
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized - Please log in first'
+    });
+  }
+
+  try {
+    // Hash the new password
+    const hashedPassword = await hashPasswordArgon2(newpassword);
+
+    // Update the password in the database
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        hashed_password: hashedPassword,
+        password_version: 1
+      })
+      .eq('id', req.session.user.id)
+      .select()
+      .single();
+
+    if (error) {
+      logger.error('Database update error in changepassword:', {
+        message: error.message,
+        code: error.code,
+        hint: error.hint,
+        details: error.details
+      });
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to update password'
+      });
+    }
+
+    if (!data) {
+      logger.info('No user found for update:', req.session.user.id);
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    logger.info('Password changed successfully for user:', req.session.user.username);
+    return res.json({ success: true });
+
+  } catch (err) {
+    logger.error('Unexpected error in changepassword route:', {
+      message: err.message,
+      stack: err.stack,
+      userId: req.session.user.id
+    });
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
+
+
 // Request password reset
 router.post('/password_reset/request', async (req, res) => {
   const { email } = req.body;
