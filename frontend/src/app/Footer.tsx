@@ -48,9 +48,10 @@ export default function Footer() {
           </div>
           <button
             onClick={toggleTheme}
-            className="hidden md:block py-2 px-4 bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
+            className="p-2 bg-gray-300 dark:bg-gray-700 rounded-full hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors"
+            aria-label="Toggle dark mode"
           >
-            Switch to {theme === "light" ? "Dark" : "Light"} Mode
+            {theme === 'light' ? '🌙' : '☀️'}
           </button>
         </div>
       </div>
