@@ -10,7 +10,6 @@ const api = axios.create({
 // Default key for encryption when no password is provided (should be stored securely in production)
 const DEFAULT_KEY = Buffer.from(process.env.AES_TEMPORARY_CONTENT_DEFAULT_KEY || '12345678901234567890123456789012', 'utf8'); // 32 bytes for AES-256
 
-
 // Encrypt content with AES-256-CBC
 const encryptAES = (content: string, password?: string | null): { iv: string; encrypted: string } => {
   const key = password ? Buffer.from(password.padEnd(32, '0').slice(0, 32), 'utf8') : DEFAULT_KEY; // Pad/truncate to 32 bytes
@@ -31,12 +30,21 @@ const decryptAES = (encrypted: string, iv: string, password?: string | null): st
 };
 
 export const login = async (username: string, password: string) => {
-  const response = await api.post(
-    '/api/login',
-    { username, password },
-    { withCredentials: true }
-  );
-  return response.data;
+  try {
+    const response = await api.post(
+      '/api/login',
+      { username, password },
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (err) {
+    if (axios.isAxiosError(err) && err.response) {
+      // Return the backend's error response data (e.g., { success: false, error: "Invalid credentials" })
+      return err.response.data;
+    }
+    // For unexpected errors (e.g., network issues), throw or return a generic error
+    return { success: false, error: 'An unexpected error occurred during login' };
+  }
 };
 
 export const changePassword = async (newpassword: string) => {
@@ -113,7 +121,7 @@ export const saveTemporaryContent = async ({
 export const getUserTemporaryContent = async () => {
   try {
     const response = await api.get('/api/getusertemporarycontent', { withCredentials: true });
-    return response.data; // Expecting { success: true, links: [{ identifier, max_date }, ...] }
+    return response.data;
   } catch (err) {
     if (axios.isAxiosError(err) && err.response) {
       return err.response.data;
@@ -129,7 +137,7 @@ export const deleteUserTemporaryContent = async (identifier: string) => {
       { identifier },
       { withCredentials: true }
     );
-    return response.data; // Expecting { success: true }
+    return response.data;
   } catch (err) {
     if (axios.isAxiosError(err) && err.response) {
       return err.response.data;
@@ -149,12 +157,12 @@ export const getTemporaryContent = async (identifier: string, password?: string)
         content: decryptAES(response.data.content, response.data.iv, password)
       };
     }
-    return response.data; // Return error responses like "Password required"
+    return response.data;
   } catch (err) {
     if (axios.isAxiosError(err) && err.response) {
-      return err.response.data; // Return the error response (e.g., 403 with "Password required")
+      return err.response.data;
     }
-    throw err; // Re-throw unexpected errors
+    throw err;
   }
 };
 

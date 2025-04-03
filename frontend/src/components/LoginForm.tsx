@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { login } from '@/lib/api';
+import axios from 'axios';
 
 interface LoginFormProps {
   onSuccess: () => void;
@@ -30,14 +31,16 @@ export const LoginForm = ({ onSuccess, onError, clearError }: LoginFormProps) =>
       if (loginResponse.success) {
         onSuccess();
       } else {
-        onError(loginResponse.error || 'Invalid credentials');
+        // Use the error message from the backend response
+        onError(loginResponse.error || 'Login failed');
       }
     } catch (error) {
       console.error("Login Error:", error);
-      if (error instanceof Error) {
-        onError(error.message || 'Login failed');
+      // Handle unexpected errors (e.g., network issues)
+      if (axios.isAxiosError(error) && error.response) {
+        onError(error.response.data.error || `Request failed with status code ${error.response.status}`);
       } else {
-        onError('An unknown error occurred.');
+        onError('An unexpected error occurred during login');
       }
     } finally {
       setIsLoading(false);
