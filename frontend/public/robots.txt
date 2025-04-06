@@ -1,7 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /passwordchange/
-Disallow: /securecontent/
-Disallow: /temporarycontent/
-Sitemap: https://www.securaised.net/sitemap.xml
-
