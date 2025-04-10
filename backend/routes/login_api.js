@@ -65,7 +65,7 @@ router.post('/login', async (req, res) => {
 });
 
 // Check authentication status
-router.get('/check-auth', (req, res) => {
+router.post('/check-auth', (req, res) => {
   res.json({ isAuthenticated: !!req.session.user });
 });
 
