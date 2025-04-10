@@ -13,16 +13,17 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     const verifyAuth = async () => {
       try {
         const response = await checkAuth();
-        if (response?.isAuthenticated) {
+        // Check both success and isAuthenticated for consistency with updated backend
+        if (response.success && response.isAuthenticated) {
           setIsAuthenticated(true);
         } else {
           setIsAuthenticated(false);
-          router.push('/');
+          router.push('/'); // Redirect to home if not authenticated
         }
       } catch (err) {
         console.error('Auth check failed:', err);
         setIsAuthenticated(false);
-        router.push('/');
+        router.push('/'); // Redirect on error (e.g., network failure)
       } finally {
         setIsLoading(false);
       }

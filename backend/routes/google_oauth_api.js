@@ -65,7 +65,7 @@ router.get('/auth/callback/google', async (req, res) => {
 
     // Set session with supabase_id (consistent with login_api.js)
     req.session.user = { id: userData.supabase_id, username: userData.username };
-    res.redirect(process.env.FRONTEND_URL || "http://localhost:3000"); // Redirect to frontend
+    res.redirect(process.env.FRONTEND_URL);
   } catch (error) {
     console.error('Google OAuth error:', error);
     res.status(500).json({ error: 'Authentication failed' });

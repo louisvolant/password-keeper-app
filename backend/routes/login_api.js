@@ -66,7 +66,11 @@ router.post('/login', async (req, res) => {
 
 // Check authentication status
 router.post('/check-auth', (req, res) => {
-  res.json({ isAuthenticated: !!req.session.user });
+  if (req.session.user) {
+    res.json({ success: true, isAuthenticated: true });
+  } else {
+    res.json({ success: false, isAuthenticated: false, error: 'Not authenticated' });
+  }
 });
 
 // Logout route

@@ -7,6 +7,16 @@ const api = axios.create({
   withCredentials: true
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      window.location.href = '/';
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Default key for encryption when no password is provided (should be stored securely in production)
 const DEFAULT_KEY = Buffer.from(process.env.AES_TEMPORARY_CONTENT_DEFAULT_KEY || '12345678901234567890123456789012', 'utf8'); // 32 bytes for AES-256
 
