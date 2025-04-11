@@ -6,6 +6,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check } from 'lucide-react';
 import { encryptContent, decryptContent } from '@/lib/crypto';
 import { updateContent } from '@/lib/api';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
+import '@/styles/quill-custom.css';
 import { AutoResizeTextArea } from '@/components/AutoResizeTextArea';
 
 interface ContentEditorProps {
@@ -21,16 +24,15 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
   const [isLoading, setIsLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [encodedContent, setEncodedContent] = useState(initialContent);
+  const [editorMode, setEditorMode] = useState<'visual' | 'markdown'>('visual');
 
   useEffect(() => {
     setEncodedContent(initialContent);
-    // Reset content loaded state when file changes
     setIsContentLoaded(false);
     setContent('');
     setMessage('');
   }, [initialContent, filePath]);
 
-  // Effect to hide success message after 5 seconds
   useEffect(() => {
     let messageTimeout: NodeJS.Timeout;
     if (message === 'Content saved successfully') {
@@ -41,7 +43,6 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
     return () => clearTimeout(messageTimeout);
   }, [message]);
 
-  // Effect to reset green button after 2 seconds
   useEffect(() => {
     let successTimeout: NodeJS.Timeout;
     if (saveSuccess) {
@@ -120,6 +121,23 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
     }
   };
 
+  const quillModules = {
+    toolbar: [
+      [{ 'header': [1, 2, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+      ['link'],
+      ['clean']
+    ],
+  };
+
+  const quillFormats = [
+    'header',
+    'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet',
+    'link'
+  ];
+
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
@@ -141,12 +159,34 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
 
       {isContentLoaded && (
         <div>
-          <AutoResizeTextArea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Enter your content here..."
-            minHeight={128}
-          />
+          <div className="flex justify-end mb-2">
+            <Button
+              onClick={() => setEditorMode(editorMode === 'visual' ? 'markdown' : 'visual')}
+              variant="outline"
+            >
+              {editorMode === 'visual' ? 'Switch to Markdown' : 'Switch to Visual'}
+            </Button>
+          </div>
+
+          {editorMode === 'markdown' ? (
+            <AutoResizeTextArea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Enter your markdown content here..."
+              minHeight={128}
+              showPreview={true}
+            />
+          ) : (
+            <ReactQuill
+              theme="snow"
+              value={content}
+              onChange={setContent}
+              modules={quillModules}
+              formats={quillFormats}
+              className="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+            />
+          )}
+
           <div className="flex justify-end mt-2">
             <Button
               onClick={handleSave}
