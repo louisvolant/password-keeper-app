@@ -168,24 +168,24 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
             </Button>
           </div>
 
-          {editorMode === 'markdown' ? (
-            <AutoResizeTextArea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder="Enter your markdown content here..."
-              minHeight={128}
-              showPreview={true}
-            />
-          ) : (
-            <ReactQuill
-              theme="snow"
-              value={content}
-              onChange={setContent}
-              modules={quillModules}
-              formats={quillFormats}
-              className="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            />
-          )}
+        {editorMode === 'markdown' ? (
+          <AutoResizeTextArea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Enter your markdown content here..."
+            minHeight={128}
+            showPreview={true}
+          />
+        ) : (
+          <ReactQuill
+            theme="snow"
+            value={content}
+            onChange={setContent}
+            modules={quillModules}
+            formats={quillFormats}
+            className="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-b" // Added rounded-b to match textarea
+          />
+        )}
 
           <div className="flex justify-end mt-2">
             <Button

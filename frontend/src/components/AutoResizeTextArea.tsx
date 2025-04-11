@@ -1,7 +1,7 @@
 // src/components/AutoResizeTextArea.tsx
 import { useEffect, useRef, useCallback } from 'react';
 import { marked } from 'marked';
-import sanitizeHtml from 'sanitize-html'; // Import sanitize-html
+import sanitizeHtml from 'sanitize-html';
 
 interface AutoResizeTextAreaProps {
   value: string;
@@ -35,7 +35,6 @@ export const AutoResizeTextArea = ({
     adjustHeight();
   }, [value, adjustHeight]);
 
-  // Sanitize markdown output
   const sanitizedHtml = showPreview
     ? sanitizeHtml(marked(value), {
         allowedTags: [
@@ -52,8 +51,8 @@ export const AutoResizeTextArea = ({
             tagName,
             attribs: {
               ...attribs,
-              target: '_blank', // Ensure links open in new tab
-              rel: 'noopener noreferrer', // Security for links
+              target: '_blank',
+              rel: 'noopener noreferrer',
             },
           }),
         },
@@ -78,13 +77,14 @@ export const AutoResizeTextArea = ({
           border-gray-300 dark:border-gray-600
           focus:border-blue-500 dark:focus:border-blue-400
           focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400
+          font-sans text-base
           ${className}
         `}
         style={{ minHeight: `${minHeight}px` }}
       />
       {showPreview && (
         <div
-          className="mt-2 p-2 border rounded bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+          className="mt-2 p-2 border rounded bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-sans text-base"
           dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />
       )}
