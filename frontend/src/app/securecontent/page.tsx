@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import ClientLayout from "../ClientLayout";
 import ProtectedRoute from '@/components/ProtectedRoute';
 import FileTree from "@/components/FileTree";
+import { SecretKeyProvider } from '@/context/SecretKeyContext';
 
 export default function SecureContentPage() {
   const router = useRouter();
@@ -85,6 +86,8 @@ export default function SecureContentPage() {
   return (
     <ProtectedRoute>
       <ClientLayout isAuthenticated={true} onLogout={handleLogout}>
+
+    <SecretKeyProvider>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
           <div className="container mx-auto p-4">
             {error ? (
@@ -113,6 +116,8 @@ export default function SecureContentPage() {
             )}
           </div>
         </div>
+
+    </SecretKeyProvider>
       </ClientLayout>
     </ProtectedRoute>
   );

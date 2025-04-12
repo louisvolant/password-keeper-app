@@ -12,6 +12,7 @@ import '@/styles/quill-custom.css';
 import { AutoResizeTextArea } from '@/components/AutoResizeTextArea';
 import TurndownService from 'turndown';
 import { marked } from 'marked';
+import { useSecretKey } from '@/context/SecretKeyContext';
 
 interface ContentEditorProps {
   filePath: string;
@@ -19,7 +20,7 @@ interface ContentEditorProps {
 }
 
 export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorProps) => {
-  const [secretKey, setSecretKey] = useState('');
+  const { secretKey, setSecretKey } = useSecretKey();
   const [content, setContent] = useState('');
   const [isContentLoaded, setIsContentLoaded] = useState(false);
   const [message, setMessage] = useState('');
@@ -46,12 +47,53 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
     [turndownService]
   );
 
+  const loadContent = useCallback(async () => {
+    if (!secretKey) {
+      setMessage('Please enter a secret key');
+      setIsContentLoaded(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      if (!encodedContent) {
+        setContent('');
+        setIsContentLoaded(true);
+        setMessage('No existing content');
+      } else {
+        const decrypted = decryptContent(encodedContent, secretKey);
+        if (decrypted) {
+          setContent(decrypted);
+          setIsContentLoaded(true);
+          setMessage('');
+        } else {
+          setMessage('Invalid key');
+          setIsContentLoaded(false);
+        }
+      }
+    } catch (err) {
+      if (err instanceof Error) {
+        setMessage(`Error loading content: ${err.message}`);
+      } else {
+        setMessage('An unknown error occurred.');
+      }
+      setIsContentLoaded(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [secretKey, encodedContent]);
+
+  // Update encodedContent and attempt to load when filePath or initialContent changes
   useEffect(() => {
     setEncodedContent(initialContent);
-    setIsContentLoaded(false);
-    setContent('');
-    setMessage('');
-  }, [initialContent, filePath]);
+    if (secretKey) {
+      loadContent();
+    } else {
+      setIsContentLoaded(false);
+      setContent('');
+      setMessage('');
+    }
+  }, [filePath, initialContent, secretKey, loadContent]);
 
   useEffect(() => {
     let messageTimeout: NodeJS.Timeout;
@@ -72,39 +114,6 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
     }
     return () => clearTimeout(successTimeout);
   }, [saveSuccess]);
-
-  const loadContent = async () => {
-    if (!secretKey) {
-      setMessage('Please enter a secret key');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      if (!encodedContent) {
-        setContent('');
-        setIsContentLoaded(true);
-        setMessage('No existing content');
-      } else {
-        const decrypted = decryptContent(encodedContent, secretKey);
-        if (decrypted) {
-          setContent(decrypted);
-          setIsContentLoaded(true);
-          setMessage('');
-        } else {
-          setMessage('Invalid key');
-        }
-      }
-    } catch (err) {
-      if (err instanceof Error) {
-        setMessage(`Error loading content: ${err.message}`);
-      } else {
-        setMessage('An unknown error occurred.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSave = async () => {
     if (!secretKey) {
@@ -158,7 +167,6 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
     'link'
   ];
 
-  // Reusable Save Button component
   const SaveButton = () => (
     <Button
       onClick={handleSave}
