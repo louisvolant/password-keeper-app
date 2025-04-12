@@ -1,6 +1,6 @@
 // src/app/layout.tsx
 import type { Metadata } from "next";
-import { SpeedInsights } from "@vercel/speed-insights/next"
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { ReactNode } from "react";
@@ -20,11 +20,12 @@ export const metadata: Metadata = {
   title: "Password Keeper",
   description: "App to save all passwords in the clouds, in a AES256 way",
   keywords: "AES256, secure, password",
+  metadataBase: new URL("https://www.securaised.net/"),
   openGraph: {
     title: "Password Keeper Tool - Secure your passwords online",
     description: "App to save all passwords in the clouds, in a AES256 way.",
     type: "website",
-    url: "https://pioo.fr",
+    url: "https://www.securaised.net/",
     images: ["/icon_shield.png"],
   },
   icons: [
@@ -45,7 +46,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       >
         {children}
         <Footer />
-        <SpeedInsights/>
+        <SpeedInsights />
       </body>
     </html>
   );

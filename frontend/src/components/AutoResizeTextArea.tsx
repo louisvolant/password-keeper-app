@@ -36,7 +36,7 @@ export const AutoResizeTextArea = ({
   }, [value, adjustHeight]);
 
   const sanitizedHtml = showPreview
-    ? sanitizeHtml(marked(value), {
+    ? sanitizeHtml(marked.parse(value, { async: false }) as string, {
         allowedTags: [
           'p', 'br', 'b', 'i', 'u', 'strong', 'em', 'a',
           'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',

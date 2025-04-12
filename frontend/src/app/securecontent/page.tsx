@@ -2,13 +2,22 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { getContent, getFileTree, logout } from "@/lib/api";
-import { ContentEditor } from "@/components/ContentEditor";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ClientLayout from "../ClientLayout";
 import ProtectedRoute from '@/components/ProtectedRoute';
 import FileTree from "@/components/FileTree";
 import { SecretKeyProvider } from '@/context/SecretKeyContext';
+import type { ContentEditorProps } from '@/components/ContentEditor';
+
+// Dynamically import ContentEditor with props type
+const ContentEditor = dynamic<ContentEditorProps>(
+  () => import('@/components/ContentEditor').then((mod) => mod.ContentEditor),
+  {
+    ssr: false,
+  }
+);
 
 export default function SecureContentPage() {
   const router = useRouter();
@@ -18,7 +27,6 @@ export default function SecureContentPage() {
   const [fileList, setFileList] = useState<string[]>([]);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
 
-  // Fetch files on mount (no auth check needed, ProtectedRoute handles it)
   useEffect(() => {
     const fetchFiles = async () => {
       try {
@@ -86,38 +94,36 @@ export default function SecureContentPage() {
   return (
     <ProtectedRoute>
       <ClientLayout isAuthenticated={true} onLogout={handleLogout}>
-
-    <SecretKeyProvider>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-          <div className="container mx-auto p-4">
-            {error ? (
-              <Alert>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            ) : (
-              <div className="lg:grid lg:grid-cols-[300px,1fr] lg:gap-6">
-                <div className="mb-4 max-w-2xl lg:mb-0">
-                  {fileList.length > 0 && (
-                    <FileTree
-                      files={fileList}
-                      selectedFile={selectedFilePath}
-                      onSelectFile={setSelectedFilePath}
-                      onUpdateFiles={handleUpdateFiles}
+        <SecretKeyProvider>
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+            <div className="container mx-auto p-4">
+              {error ? (
+                <Alert>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              ) : (
+                <div className="lg:grid lg:grid-cols-[300px,1fr] lg:gap-6">
+                  <div className="mb-4 max-w-2xl lg:mb-0">
+                    {fileList.length > 0 && (
+                      <FileTree
+                        files={fileList}
+                        selectedFile={selectedFilePath}
+                        onSelectFile={setSelectedFilePath}
+                        onUpdateFiles={handleUpdateFiles}
+                      />
+                    )}
+                  </div>
+                  <div className="max-w-2xl">
+                    <ContentEditor
+                      filePath={selectedFilePath || ""}
+                      initialContent={encodedContent || ""}
                     />
-                  )}
+                  </div>
                 </div>
-                <div className="max-w-2xl">
-                  <ContentEditor
-                    filePath={selectedFilePath || ""}
-                    initialContent={encodedContent || ""}
-                  />
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-
-    </SecretKeyProvider>
+        </SecretKeyProvider>
       </ClientLayout>
     </ProtectedRoute>
   );

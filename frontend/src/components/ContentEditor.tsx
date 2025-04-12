@@ -1,4 +1,5 @@
 // src/components/ContentEditor.tsx
+"use client";
 import { useState, useEffect, useCallback } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ import TurndownService from 'turndown';
 import { marked } from 'marked';
 import { useSecretKey } from '@/context/SecretKeyContext';
 
-interface ContentEditorProps {
+export interface ContentEditorProps {
   filePath: string;
   initialContent: string;
 }
@@ -36,7 +37,7 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
   });
 
   const markdownToHtml = useCallback((markdown: string) => {
-    return marked(markdown);
+    return marked.parse(markdown, { async: false }) as string;
   }, []);
 
   const handleQuillChange = useCallback(
@@ -83,17 +84,16 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
     }
   }, [secretKey, encodedContent]);
 
-  // Update encodedContent and attempt to load when filePath or initialContent changes
   useEffect(() => {
     setEncodedContent(initialContent);
-    if (secretKey) {
+    if (isContentLoaded && secretKey) {
       loadContent();
     } else {
-      setIsContentLoaded(false);
       setContent('');
       setMessage('');
+      setIsContentLoaded(false);
     }
-  }, [filePath, initialContent, secretKey, loadContent]);
+  }, [filePath, initialContent, loadContent, isContentLoaded, secretKey]);
 
   useEffect(() => {
     let messageTimeout: NodeJS.Timeout;
@@ -150,6 +150,13 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
     }
   };
 
+  const handleChangeSecretKey = () => {
+    setIsContentLoaded(false);
+    setContent('');
+    setMessage('');
+    setSecretKey('');
+  };
+
   const quillModules = {
     toolbar: [
       [{ 'header': [1, 2, false] }],
@@ -186,22 +193,32 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
-        <Input
-          type="text"
-          placeholder="Secret key"
-          value={secretKey}
-          onChange={(e) => setSecretKey(e.target.value)}
-          className="flex-grow"
-        />
-        {!isContentLoaded && (
+      {!isContentLoaded ? (
+        <div className="flex gap-2">
+          <Input
+            type="text"
+            placeholder="Secret key"
+            value={secretKey}
+            onChange={(e) => setSecretKey(e.target.value)}
+            className="flex-grow"
+          />
           <Button
             onClick={loadContent}
-            disabled={isLoading || !secretKey}>
+            disabled={isLoading || !secretKey}
+          >
             Load content
           </Button>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="flex gap-2 mb-4">
+          <Button
+            onClick={handleChangeSecretKey}
+            variant="outline"
+          >
+            Change Secret Key
+          </Button>
+        </div>
+      )}
 
       {isContentLoaded && (
         <div>
