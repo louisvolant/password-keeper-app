@@ -20,7 +20,7 @@ interface ContentEditorProps {
 
 export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorProps) => {
   const [secretKey, setSecretKey] = useState('');
-  const [content, setContent] = useState(''); // Content stored as markdown
+  const [content, setContent] = useState('');
   const [isContentLoaded, setIsContentLoaded] = useState(false);
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -28,22 +28,18 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
   const [encodedContent, setEncodedContent] = useState(initialContent);
   const [editorMode, setEditorMode] = useState<'visual' | 'markdown'>('visual');
 
-  // Initialize Turndown for HTML-to-markdown conversion
   const turndownService = new TurndownService({
-    headingStyle: 'atx', // Use # for headers
-    bulletListMarker: '-', // Use - for lists
-    codeBlockStyle: 'fenced', // Use ``` for code blocks
+    headingStyle: 'atx',
+    bulletListMarker: '-',
+    codeBlockStyle: 'fenced',
   });
 
-  // Convert markdown to HTML for Quill
   const markdownToHtml = useCallback((markdown: string) => {
     return marked(markdown);
   }, []);
 
-  // Handle paste in Quill to convert to markdown
   const handleQuillChange = useCallback(
     (value: string) => {
-      // Quill outputs HTML; convert to markdown
       const markdown = turndownService.turndown(value);
       setContent(markdown);
     },
@@ -92,7 +88,7 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
       } else {
         const decrypted = decryptContent(encodedContent, secretKey);
         if (decrypted) {
-          setContent(decrypted); // Assume decrypted content is markdown
+          setContent(decrypted);
           setIsContentLoaded(true);
           setMessage('');
         } else {
@@ -162,6 +158,24 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
     'link'
   ];
 
+  // Reusable Save Button component
+  const SaveButton = () => (
+    <Button
+      onClick={handleSave}
+      disabled={isLoading}
+      className={saveSuccess ? "bg-green-600 hover:bg-green-700" : ""}
+    >
+      {saveSuccess ? (
+        <>
+          <Check className="w-4 h-4 mr-2" />
+          Saved
+        </>
+      ) : (
+        'Save'
+      )}
+    </Button>
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
@@ -183,13 +197,14 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
 
       {isContentLoaded && (
         <div>
-          <div className="flex justify-end mb-2">
+          <div className="flex justify-end mb-2 gap-2">
             <Button
               onClick={() => setEditorMode(editorMode === 'visual' ? 'markdown' : 'visual')}
               variant="outline"
             >
               {editorMode === 'visual' ? 'Switch to Markdown' : 'Switch to Visual'}
             </Button>
+            <SaveButton />
           </div>
 
           {editorMode === 'markdown' ? (
@@ -203,8 +218,8 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
           ) : (
             <ReactQuill
               theme="snow"
-              value={markdownToHtml(content)} // Feed HTML to Quill
-              onChange={handleQuillChange} // Convert HTML back to markdown
+              value={markdownToHtml(content)}
+              onChange={handleQuillChange}
               modules={quillModules}
               formats={quillFormats}
               className="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-b"
@@ -212,20 +227,7 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
           )}
 
           <div className="flex justify-end mt-2">
-            <Button
-              onClick={handleSave}
-              disabled={isLoading}
-              className={saveSuccess ? "bg-green-600 hover:bg-green-700" : ""}
-            >
-              {saveSuccess ? (
-                <>
-                  <Check className="w-4 h-4 mr-2" />
-                  Saved
-                </>
-              ) : (
-                'Save'
-              )}
-            </Button>
+            <SaveButton />
           </div>
         </div>
       )}
