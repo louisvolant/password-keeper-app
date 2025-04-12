@@ -148,13 +148,13 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
     setIsLoading(true);
     try {
       const { file_tree } = await getFileTree();
-      const files = file_tree ? decryptFileTree(file_tree, secretKey) : [];
-      if (!files && file_tree) {
+      const files: string[] = file_tree ? decryptFileTree(file_tree, secretKey) || [] : [];
+      if (!files.length && file_tree) {
         throw new Error("Invalid old secret key");
       }
 
       const contents = await Promise.all(
-        files.map(async (path) => {
+        files.map(async (path: string) => {
           const { encoded_content } = await getContent(path);
           return {
             filePath: path,
