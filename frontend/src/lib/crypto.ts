@@ -15,3 +15,11 @@ export const decryptContent = (encrypted: string, key: string): string | null =>
     return null;
   }
 };
+
+export const encryptFileTree = (fileTree: string[], secretKey: string) => {
+  return encryptContent(JSON.stringify(fileTree), secretKey);
+};
+export const decryptFileTree = (encryptedFileTree: string, secretKey: string) => {
+  const decrypted = decryptContent(encryptedFileTree, secretKey);
+  return decrypted ? JSON.parse(decrypted) : null;
+};

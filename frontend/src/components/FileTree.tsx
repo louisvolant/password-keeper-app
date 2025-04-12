@@ -1,9 +1,12 @@
 // src/components/FileTree.tsx
-import React, { useState } from 'react';
+"use client";
+import React, { useState, useEffect } from 'react';
 import { ChevronRight, ChevronDown, Folder, FileText, Plus, FolderPlus, Trash2, Pencil } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { updateContent, getContent, updateFileTree, removeFile } from '@/lib/api';
+import { updateContent, getContent, updateFileTree, removeFile } from '@/lib/secure_content_api';
+import { encryptFileTree } from '@/lib/crypto';
+import { useSecretKey } from '@/context/SecretKeyContext';
 
 interface TreeNode {
   name: string;
@@ -22,14 +25,16 @@ interface IntermediateTreeNode {
 interface FileTreeProps {
   files: string[];
   selectedFile: string | null;
-  onSelectFile: (path: string | null) => void; // Updated type to accept null
+  onSelectFile: (path: string | null) => void;
   onUpdateFiles: (newFiles: string[]) => void;
 }
 
 const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTreeProps) => {
+  const { secretKey } = useSecretKey();
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [newItemInput, setNewItemInput] = useState<{ path: string; value: string; type: 'file' | 'folder' } | null>(null);
   const [renameInput, setRenameInput] = useState<{ path: string; value: string } | null>(null);
+  const [tree, setTree] = useState<TreeNode[]>([]);
 
   const buildFileTree = (paths: string[]): TreeNode[] => {
     const root: { [key: string]: IntermediateTreeNode } = {};
@@ -47,7 +52,7 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
             name: part,
             path: currentPath,
             type: isLastPart ? 'file' : 'folder',
-            children: isLastPart ? undefined : {}
+            children: isLastPart ? undefined : {},
           };
         }
 
@@ -72,19 +77,23 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
         ...filesNodes.map(node => ({
           name: node.name,
           path: node.path,
-          type: node.type
+          type: node.type,
         })),
         ...folderNodes.map(node => ({
           name: node.name,
           path: node.path,
           type: node.type,
-          children: node.children ? convertToArray(node.children) : undefined
-        }))
+          children: node.children ? convertToArray(node.children) : undefined,
+        })),
       ];
     };
 
     return convertToArray(root);
   };
+
+  useEffect(() => {
+    setTree(buildFileTree(files));
+  }, [files]);
 
   const toggleFolder = (path: string) => {
     setExpandedFolders(prev => {
@@ -103,7 +112,7 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
   };
 
   const handleCreateItem = async (folderPath: string) => {
-    if (!newItemInput?.value) return;
+    if (!newItemInput?.value || !secretKey) return;
 
     const newPath = folderPath ? `${folderPath}/${newItemInput.value}` : newItemInput.value;
 
@@ -118,7 +127,8 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
         await updateContent(defaultFilePath, '');
         newFiles.push(defaultFilePath);
       }
-      await updateFileTree(newFiles);
+      const encryptedTree = encryptFileTree(newFiles, secretKey);
+      await updateFileTree(encryptedTree);
       onUpdateFiles(newFiles);
       setNewItemInput(null);
     } catch (error) {
@@ -127,10 +137,13 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
   };
 
   const handleRemoveFile = async (filePath: string) => {
+    if (!secretKey) return;
+
     try {
       await removeFile(filePath);
       const newFiles = files.filter(f => f !== filePath);
-      await updateFileTree(newFiles);
+      const encryptedTree = encryptFileTree(newFiles, secretKey);
+      await updateFileTree(encryptedTree);
       onUpdateFiles(newFiles);
       if (selectedFile === filePath) {
         onSelectFile(newFiles[0] || null);
@@ -145,7 +158,7 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
   };
 
   const handleConfirmRename = async (oldPath: string, isFolder: boolean) => {
-    if (!renameInput?.value || renameInput.value === oldPath.split('/').pop()) return;
+    if (!renameInput?.value || renameInput.value === oldPath.split('/').pop() || !secretKey) return;
 
     const parentPath = oldPath.substring(0, oldPath.lastIndexOf('/'));
     const newName = renameInput.value;
@@ -171,7 +184,8 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
         newFiles.push(newPath);
         if (selectedFile === oldPath) onSelectFile(newPath);
       }
-      await updateFileTree(newFiles);
+      const encryptedTree = encryptFileTree(newFiles, secretKey);
+      await updateFileTree(encryptedTree);
       onUpdateFiles(newFiles);
       setRenameInput(null);
     } catch (error) {
@@ -180,7 +194,6 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
   };
 
   const handleRowClick = (e: React.MouseEvent, isFolder: boolean, path: string) => {
-    // Prevent row click if an action icon was clicked
     if ((e.target as HTMLElement).closest('.action-icon')) return;
     if (isFolder) {
       toggleFolder(path);
@@ -304,8 +317,6 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
       </div>
     );
   };
-
-  const tree = buildFileTree(files);
 
   return (
     <div className="border dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800 transition-colors">

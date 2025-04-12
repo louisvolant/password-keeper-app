@@ -1,5 +1,4 @@
-//routes/file_tree_api.js
-
+// routes/file_tree_api.js
 const express = require('express');
 const router = express.Router();
 const { UserFileTreeModel } = require('../dao/userDao');
@@ -8,29 +7,26 @@ const authenticateUser = require('../middleware/auth');
 // Route to retrieve file tree
 router.get('/getfiletree', authenticateUser, async (req, res) => {
   try {
-    // Fetch file tree from MongoDB
     const fileTreeDoc = await UserFileTreeModel.findOne({
-      supabase_user_id: req.user.id.toString()
+      supabase_user_id: req.user.id.toString(),
     });
 
     if (!fileTreeDoc) {
-      // If no file tree exists, create a new document
+      // Initialize with empty encrypted file tree
       const newFileTree = await UserFileTreeModel.findOneAndUpdate(
         { supabase_user_id: req.user.id.toString() },
         {
           supabase_user_id: req.user.id.toString(),
-          file_tree: '{}',
+          file_tree: '', // Empty encrypted string
           created_at: new Date(),
-          updated_at: new Date()
+          updated_at: new Date(),
         },
         { upsert: true, new: true }
       );
-
-      return res.json({ file_tree: '{}' });
+      return res.json({ file_tree: '' });
     }
 
-    // Return existing file tree
-    res.json({ file_tree: fileTreeDoc.file_tree });
+    res.json({ file_tree: fileTreeDoc.file_tree || '' });
   } catch (error) {
     console.error('Get file tree error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
@@ -39,21 +35,23 @@ router.get('/getfiletree', authenticateUser, async (req, res) => {
 
 // Route to update file tree
 router.post('/updatefiletree', authenticateUser, async (req, res) => {
-  const { file_tree } = req.body;
+  const { file_tree } = req.body; // Expect encrypted string
+
+  if (file_tree === undefined) {
+    return res.status(400).json({ error: 'file_tree is required' });
+  }
 
   try {
     const updatedAt = new Date();
-
-    // Update or insert file tree in MongoDB
     const updatedFileTree = await UserFileTreeModel.findOneAndUpdate(
       { supabase_user_id: req.user.id.toString() },
       {
-        file_tree,
+        file_tree, // Store as-is (encrypted)
         updated_at: updatedAt,
         $setOnInsert: {
           supabase_user_id: req.user.id.toString(),
-          created_at: updatedAt
-        }
+          created_at: updatedAt,
+        },
       },
       { upsert: true, new: true }
     );
@@ -74,31 +72,16 @@ router.post('/remove_file', authenticateUser, async (req, res) => {
   }
 
   try {
-    // Fetch current file tree from MongoDB
     const fileTreeDoc = await UserFileTreeModel.findOne({
-      supabase_user_id: req.user.id.toString()
+      supabase_user_id: req.user.id.toString(),
     });
 
-    if (!fileTreeDoc) {
-      return res.status(500).json({ error: 'Error fetching file tree' });
+    if (!fileTreeDoc || !fileTreeDoc.file_tree) {
+      return res.status(404).json({ error: 'File tree not found' });
     }
 
-    let fileTree = JSON.parse(fileTreeDoc.file_tree || '[]');
-    if (!fileTree.includes(file_path)) {
-      return res.status(404).json({ error: 'File not found' });
-    }
-
-    const updatedFileTree = fileTree.filter(path => path !== file_path);
-    const updatedAt = new Date();
-
-    // Update file tree in MongoDB
-    await UserFileTreeModel.findOneAndUpdate(
-      { supabase_user_id: req.user.id.toString() },
-      { file_tree: JSON.stringify(updatedFileTree), updated_at: updatedAt },
-      { upsert: true, new: true }
-    );
-
-    res.json({ success: true, file_tree: JSON.stringify(updatedFileTree) });
+    // Client decrypts and re-encrypts file_tree
+    res.json({ success: true }); // Client updates via /updatefiletree
   } catch (error) {
     console.error('Remove file error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
@@ -114,36 +97,16 @@ router.post('/remove_folder', authenticateUser, async (req, res) => {
   }
 
   try {
-    // Fetch current file tree from MongoDB
     const fileTreeDoc = await UserFileTreeModel.findOne({
-      supabase_user_id: req.user.id.toString()
+      supabase_user_id: req.user.id.toString(),
     });
 
-    if (!fileTreeDoc) {
-      return res.status(500).json({ error: 'Error fetching file tree' });
+    if (!fileTreeDoc || !fileTreeDoc.file_tree) {
+      return res.status(404).json({ error: 'File tree not found' });
     }
 
-    let fileTree = JSON.parse(fileTreeDoc.file_tree || '[]');
-    const folderExists = fileTree.some(path => path.startsWith(folder_path + '/'));
-
-    if (!folderExists) {
-      return res.status(404).json({ error: 'Folder not found' });
-    }
-
-    const updatedFileTree = fileTree.filter(path => !path.startsWith(folder_path + '/'));
-    const updatedAt = new Date();
-
-    // Update file tree in MongoDB
-    await UserFileTreeModel.findOneAndUpdate(
-      { supabase_user_id: req.user.id.toString() },
-      { file_tree: JSON.stringify(updatedFileTree), updated_at: updatedAt },
-      { upsert: true, new: true }
-    );
-
-    res.json({
-      success: true,
-      file_tree: JSON.stringify(updatedFileTree)
-    });
+    // Client decrypts and re-encrypts file_tree
+    res.json({ success: true });
   } catch (error) {
     console.error('Remove folder error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });
@@ -159,44 +122,16 @@ router.post('/rename', authenticateUser, async (req, res) => {
   }
 
   try {
-    // Fetch current file tree from MongoDB
     const fileTreeDoc = await UserFileTreeModel.findOne({
-      supabase_user_id: req.user.id.toString()
+      supabase_user_id: req.user.id.toString(),
     });
 
-    if (!fileTreeDoc) {
-      return res.status(500).json({ error: 'Error fetching file tree' });
+    if (!fileTreeDoc || !fileTreeDoc.file_tree) {
+      return res.status(404).json({ error: 'File tree not found' });
     }
 
-    let fileTree = JSON.parse(fileTreeDoc.file_tree || '[]');
-    const isFolder = fileTree.some(path => path.startsWith(old_path + '/'));
-
-    let updatedFileTree = [...fileTree];
-
-    if (isFolder) {
-      updatedFileTree = fileTree.map(path =>
-        path.startsWith(old_path + '/') ? path.replace(old_path, new_path) : path
-      );
-    } else {
-      if (!fileTree.includes(old_path)) {
-        return res.status(404).json({ error: 'File not found' });
-      }
-      updatedFileTree = fileTree.map(path => path === old_path ? new_path : path);
-    }
-
-    const updatedAt = new Date();
-
-    // Update file tree in MongoDB
-    await UserFileTreeModel.findOneAndUpdate(
-      { supabase_user_id: req.user.id.toString() },
-      { file_tree: JSON.stringify(updatedFileTree), updated_at: updatedAt },
-      { upsert: true, new: true }
-    );
-
-    res.json({
-      success: true,
-      file_tree: JSON.stringify(updatedFileTree)
-    });
+    // Client decrypts and re-encrypts file_tree
+    res.json({ success: true });
   } catch (error) {
     console.error('Rename error:', error);
     res.status(500).json({ error: 'Server error', details: error.message });

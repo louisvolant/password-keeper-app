@@ -2,7 +2,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { getTemporaryContent } from '@/lib/api';
+import { getTemporaryContent } from '@/lib/temporary_content_api';
 
 export default function SecureLinkViewPage() {
   const { id } = useParams();

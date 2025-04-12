@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check } from 'lucide-react';
-import { encryptContent, decryptContent } from '@/lib/crypto';
-import { updateContent } from '@/lib/api';
+import { encryptContent, decryptContent, encryptFileTree, decryptFileTree } from '@/lib/crypto';
+import { updateContent, getFileTree, getContent, updateFileTree, updateAllContent } from '@/lib/secure_content_api';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import '@/styles/quill-custom.css';
@@ -29,6 +29,8 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [encodedContent, setEncodedContent] = useState(initialContent);
   const [editorMode, setEditorMode] = useState<'visual' | 'markdown'>('visual');
+  const [newSecretKey, setNewSecretKey] = useState('');
+  const [showKeyChange, setShowKeyChange] = useState(false);
 
   const turndownService = new TurndownService({
     headingStyle: 'atx',
@@ -73,11 +75,7 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
         }
       }
     } catch (err) {
-      if (err instanceof Error) {
-        setMessage(`Error loading content: ${err.message}`);
-      } else {
-        setMessage('An unknown error occurred.');
-      }
+      setMessage('Error loading content');
       setIsContentLoaded(false);
     } finally {
       setIsLoading(false);
@@ -86,18 +84,18 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
 
   useEffect(() => {
     setEncodedContent(initialContent);
-    if (isContentLoaded && secretKey) {
+    if (secretKey) {
       loadContent();
     } else {
       setContent('');
       setMessage('');
       setIsContentLoaded(false);
     }
-  }, [filePath, initialContent, loadContent, isContentLoaded, secretKey]);
+  }, [filePath, initialContent, loadContent, secretKey]);
 
   useEffect(() => {
     let messageTimeout: NodeJS.Timeout;
-    if (message === 'Content saved successfully') {
+    if (message === 'Content saved successfully' || message === 'Secret key updated') {
       messageTimeout = setTimeout(() => {
         setMessage('');
       }, 5000);
@@ -134,27 +132,55 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
       setSaveSuccess(true);
       setEncodedContent(encryptedContent);
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        setMessage(error.message || 'Error saving content');
-        console.error("Save error:", error);
-      } else if (typeof error === 'object' && error !== null && 'response' in error) {
-        const axiosError = error as { response: { data: { error: string } } };
-        setMessage(axiosError.response.data.error || 'Error saving content');
-        console.error("Save error details:", axiosError.response.data);
-      } else {
-        setMessage('An unknown error occurred during save.');
-        console.error("Save error:", error);
-      }
+      setMessage('Error saving content');
+      console.error("Save error:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleChangeSecretKey = () => {
-    setIsContentLoaded(false);
-    setContent('');
-    setMessage('');
-    setSecretKey('');
+  const handleChangeSecretKey = async () => {
+    if (!newSecretKey) {
+      setMessage('Please enter a new secret key');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { file_tree } = await getFileTree();
+      const files = file_tree ? decryptFileTree(file_tree, secretKey) : [];
+      if (!files && file_tree) {
+        throw new Error("Invalid old secret key");
+      }
+
+      const contents = await Promise.all(
+        files.map(async (path) => {
+          const { encoded_content } = await getContent(path);
+          return {
+            filePath: path,
+            content: encoded_content ? decryptContent(encoded_content, secretKey) || "" : "",
+          };
+        })
+      );
+
+      const newEncryptedTree = encryptFileTree(files, newSecretKey);
+      const newEncryptedContents = contents.map(({ filePath, content }) => ({
+        filePath,
+        encryptedContent: encryptContent(content, newSecretKey),
+      }));
+
+      await updateFileTree(newEncryptedTree);
+      await updateAllContent(newEncryptedContents);
+      setSecretKey(newSecretKey);
+      setNewSecretKey('');
+      setShowKeyChange(false);
+      setIsContentLoaded(false);
+      setMessage('Secret key updated');
+    } catch (err) {
+      setMessage('Failed to update secret key');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const quillModules = {
@@ -163,7 +189,7 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
       ['bold', 'italic', 'underline', 'strike'],
       [{ 'list': 'ordered' }, { 'list': 'bullet' }],
       ['link'],
-      ['clean']
+      ['clean'],
     ],
   };
 
@@ -171,7 +197,7 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
     'header',
     'bold', 'italic', 'underline', 'strike',
     'list', 'bullet',
-    'link'
+    'link',
   ];
 
   const SaveButton = () => (
@@ -196,7 +222,7 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
       {!isContentLoaded ? (
         <div className="flex gap-2">
           <Input
-            type="text"
+            type="password"
             placeholder="Secret key"
             value={secretKey}
             onChange={(e) => setSecretKey(e.target.value)}
@@ -210,13 +236,30 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
           </Button>
         </div>
       ) : (
-        <div className="flex gap-2 mb-4">
+        <div className="space-y-2 mb-4">
           <Button
-            onClick={handleChangeSecretKey}
+            onClick={() => setShowKeyChange(!showKeyChange)}
             variant="outline"
           >
-            Change Secret Key
+            {showKeyChange ? 'Cancel' : 'Change Secret Key'}
           </Button>
+          {showKeyChange && (
+            <div className="flex gap-2">
+              <Input
+                type="password"
+                placeholder="New secret key"
+                value={newSecretKey}
+                onChange={(e) => setNewSecretKey(e.target.value)}
+                className="flex-grow"
+              />
+              <Button
+                onClick={handleChangeSecretKey}
+                disabled={isLoading || !newSecretKey}
+              >
+                Update Secret Key
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

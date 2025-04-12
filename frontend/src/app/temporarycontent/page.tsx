@@ -2,7 +2,7 @@
 'use client';
 import { useState } from 'react';
 import { Header } from '@/components/Header';
-import { saveTemporaryContent, getUserTemporaryContent, deleteUserTemporaryContent } from '@/lib/api';
+import { saveTemporaryContent, getUserTemporaryContent, deleteUserTemporaryContent } from '@/lib/temporary_content_api';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function TemporaryContentPage() {
