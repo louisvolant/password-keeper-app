@@ -1,5 +1,5 @@
 // src/components/ContentEditor.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -10,6 +10,8 @@ import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import '@/styles/quill-custom.css';
 import { AutoResizeTextArea } from '@/components/AutoResizeTextArea';
+import TurndownService from 'turndown';
+import { marked } from 'marked';
 
 interface ContentEditorProps {
   filePath: string;
@@ -18,13 +20,35 @@ interface ContentEditorProps {
 
 export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorProps) => {
   const [secretKey, setSecretKey] = useState('');
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState(''); // Content stored as markdown
   const [isContentLoaded, setIsContentLoaded] = useState(false);
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [encodedContent, setEncodedContent] = useState(initialContent);
   const [editorMode, setEditorMode] = useState<'visual' | 'markdown'>('visual');
+
+  // Initialize Turndown for HTML-to-markdown conversion
+  const turndownService = new TurndownService({
+    headingStyle: 'atx', // Use # for headers
+    bulletListMarker: '-', // Use - for lists
+    codeBlockStyle: 'fenced', // Use ``` for code blocks
+  });
+
+  // Convert markdown to HTML for Quill
+  const markdownToHtml = useCallback((markdown: string) => {
+    return marked(markdown);
+  }, []);
+
+  // Handle paste in Quill to convert to markdown
+  const handleQuillChange = useCallback(
+    (value: string) => {
+      // Quill outputs HTML; convert to markdown
+      const markdown = turndownService.turndown(value);
+      setContent(markdown);
+    },
+    [turndownService]
+  );
 
   useEffect(() => {
     setEncodedContent(initialContent);
@@ -68,7 +92,7 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
       } else {
         const decrypted = decryptContent(encodedContent, secretKey);
         if (decrypted) {
-          setContent(decrypted);
+          setContent(decrypted); // Assume decrypted content is markdown
           setIsContentLoaded(true);
           setMessage('');
         } else {
@@ -168,24 +192,24 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
             </Button>
           </div>
 
-        {editorMode === 'markdown' ? (
-          <AutoResizeTextArea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Enter your markdown content here..."
-            minHeight={128}
-            showPreview={true}
-          />
-        ) : (
-          <ReactQuill
-            theme="snow"
-            value={content}
-            onChange={setContent}
-            modules={quillModules}
-            formats={quillFormats}
-            className="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-b" // Added rounded-b to match textarea
-          />
-        )}
+          {editorMode === 'markdown' ? (
+            <AutoResizeTextArea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Enter your markdown content here..."
+              minHeight={128}
+              showPreview={true}
+            />
+          ) : (
+            <ReactQuill
+              theme="snow"
+              value={markdownToHtml(content)} // Feed HTML to Quill
+              onChange={handleQuillChange} // Convert HTML back to markdown
+              modules={quillModules}
+              formats={quillFormats}
+              className="bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-b"
+            />
+          )}
 
           <div className="flex justify-end mt-2">
             <Button
