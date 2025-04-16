@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { logout } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import HeaderButtons from "./HeaderButtons";
 
 interface HeaderProps {
   isAuthenticated: boolean;
   onLogout?: () => void;
-  toggleSidebar?: () => void; // Add prop to toggle sidebar
-  isSidebarOpen?: boolean;    // Add prop to track sidebar state
+  toggleSidebar?: () => void;
+  isSidebarOpen?: boolean;
 }
 
 export const Header = ({ isAuthenticated, onLogout, toggleSidebar, isSidebarOpen }: HeaderProps) => {
@@ -39,7 +40,6 @@ export const Header = ({ isAuthenticated, onLogout, toggleSidebar, isSidebarOpen
       <div className="container mx-auto px-4 flex items-center justify-between">
         {/* Left Section: Burger (mobile only) and Logo */}
         <div className="flex items-center space-x-4">
-          {/* Burger Menu - Visible only on mobile */}
           <button
             className="md:hidden text-2xl focus:outline-none text-white dark:text-gray-200"
             onClick={toggleSidebar}
@@ -47,8 +47,6 @@ export const Header = ({ isAuthenticated, onLogout, toggleSidebar, isSidebarOpen
           >
             {isSidebarOpen ? "×" : "☰"}
           </button>
-
-          {/* Logo and Title */}
           <Link href="/" className="flex items-center">
             <Image
               src="/icon_shield.png"
@@ -62,9 +60,8 @@ export const Header = ({ isAuthenticated, onLogout, toggleSidebar, isSidebarOpen
           </Link>
         </div>
 
-        {/* Right Section: Links (desktop only) and Logout */}
+        {/* Right Section: Links, Login/Register, and Logout */}
         <div className="flex items-center space-x-4">
-          {/* Navigation Links - Hidden on mobile */}
           <nav className="hidden md:flex space-x-4">
             <Link href="/confidentiality-rules" className="hover:text-gray-200">
               Confidentiality Rules
@@ -73,9 +70,7 @@ export const Header = ({ isAuthenticated, onLogout, toggleSidebar, isSidebarOpen
               General Conditions
             </Link>
           </nav>
-
-          {/* Logout Button - Visible on all screens if authenticated */}
-          {isAuthenticated && (
+          {isAuthenticated ? (
             <Button
               variant="default"
               onClick={handleLogout}
@@ -84,6 +79,8 @@ export const Header = ({ isAuthenticated, onLogout, toggleSidebar, isSidebarOpen
               <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>
+          ) : (
+            <HeaderButtons isAuthenticated={isAuthenticated} />
           )}
         </div>
       </div>
