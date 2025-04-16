@@ -12,9 +12,10 @@ interface LoginFormProps {
   onSuccess: () => void;
   onError: (message: string) => void;
   clearError: () => void;
+  onRegisterClick?: () => void;
 }
 
-export const LoginForm = ({ onSuccess, onError, clearError }: LoginFormProps) => {
+export const LoginForm = ({ onSuccess, onError, clearError, onRegisterClick }: LoginFormProps) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -31,12 +32,10 @@ export const LoginForm = ({ onSuccess, onError, clearError }: LoginFormProps) =>
       if (loginResponse.success) {
         onSuccess();
       } else {
-        // Use the error message from the backend response
         onError(loginResponse.error || 'Login failed');
       }
     } catch (error) {
       console.error("Login Error:", error);
-      // Handle unexpected errors (e.g., network issues)
       if (axios.isAxiosError(error) && error.response) {
         onError(error.response.data.error || `Request failed with status code ${error.response.status}`);
       } else {
@@ -56,34 +55,33 @@ export const LoginForm = ({ onSuccess, onError, clearError }: LoginFormProps) =>
             placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="bg-white dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:border-gray-600"
+            className="w-full bg-white dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:border-gray-600"
           />
           <Input
             type="password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="bg-white dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:border-gray-600"
+            className="w-full bg-white dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:border-gray-600"
           />
           <Button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors"
+            className="w-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-400 dark:hover:bg-blue-500 text-white transition-colors"
             disabled={isLoading}
           >
             {isLoading ? "Logging in..." : "Login"}
           </Button>
         </form>
         <div className="mt-4 flex justify-between gap-2">
-          <Link href="/register" className="flex-1">
-            <Button
-              variant="outline"
-              className="w-full border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-              disabled={isLoading}
-            >
-              Register
-            </Button>
-          </Link>
-          <Link href="/passwordlost" className="flex-1">
+          <Button
+            variant="outline"
+            onClick={onRegisterClick}
+            className="w-full border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            disabled={isLoading}
+          >
+            Register
+          </Button>
+          <Link href="/passwordlost" className="w-full">
             <Button
               variant="outline"
               className="w-full border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"

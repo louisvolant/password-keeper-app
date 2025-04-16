@@ -34,6 +34,11 @@ export const login = async (username: string, password: string) => {
   }
 };
 
+export const googleLogin = async () => {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '');
+  window.location.href = `${apiUrl}/api/auth/google`;
+};
+
 export const changePassword = async (newpassword: string) => {
   const response = await api.post('/api/password/change', { newpassword }, { withCredentials: true });
   return response.data;
