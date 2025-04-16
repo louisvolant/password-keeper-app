@@ -1,52 +1,47 @@
 // src/components/Header.tsx
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
-import { logout } from "@/lib/api";
 import { useRouter } from "next/navigation";
-import HeaderButtons from "./HeaderButtons";
+import { Button } from "@/components/ui/button";
+import AuthModal from "./AuthModal";
 
 interface HeaderProps {
   isAuthenticated: boolean;
-  onLogout?: () => void;
-  toggleSidebar?: () => void;
-  isSidebarOpen?: boolean;
 }
 
-export const Header = ({ isAuthenticated, onLogout, toggleSidebar, isSidebarOpen }: HeaderProps) => {
+export const Header = ({ isAuthenticated }: HeaderProps) => {
   const router = useRouter();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<"login" | "register">("login");
 
   const handleLogout = async () => {
     try {
       await logout();
-      if (onLogout) {
-        onLogout();
-      }
       router.push("/");
     } catch (error) {
       console.error("Logout failed:", error);
-      if (onLogout) {
-        onLogout();
-      }
       router.push("/");
     }
+  };
+
+  const openLoginModal = () => {
+    setModalMode("login");
+    setIsModalOpen(true);
+  };
+
+  const openRegisterModal = () => {
+    setModalMode("register");
+    setIsModalOpen(true);
   };
 
   return (
     <header className="bg-blue-600 dark:bg-blue-800 text-white py-4">
       <div className="container mx-auto px-4 flex items-center justify-between">
-        {/* Left Section: Burger (mobile only) and Logo */}
-        <div className="flex items-center space-x-4">
-          <button
-            className="md:hidden text-2xl focus:outline-none text-white dark:text-gray-200"
-            onClick={toggleSidebar}
-            aria-label="Toggle menu"
-          >
-            {isSidebarOpen ? "×" : "☰"}
-          </button>
+        {/* Left Section: Logo */}
+        <div className="flex items-center">
           <Link href="/" className="flex items-center">
             <Image
               src="/icon_shield.png"
@@ -60,7 +55,7 @@ export const Header = ({ isAuthenticated, onLogout, toggleSidebar, isSidebarOpen
           </Link>
         </div>
 
-        {/* Right Section: Links, Login/Register, and Logout */}
+        {/* Right Section: Links and Buttons */}
         <div className="flex items-center space-x-4">
           <nav className="hidden md:flex space-x-4">
             <Link href="/confidentiality-rules" className="hover:text-gray-200">
@@ -71,19 +66,76 @@ export const Header = ({ isAuthenticated, onLogout, toggleSidebar, isSidebarOpen
             </Link>
           </nav>
           {isAuthenticated ? (
-            <Button
-              variant="default"
-              onClick={handleLogout}
-              className="flex items-center text-white hover:text-white hover:bg-blue-700 dark:hover:bg-blue-900"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
+            <div className="flex items-center space-x-4">
+              <Link href="/account">
+                <Button
+                  variant="outline"
+                  className="btn btn-outline border-gray-300 dark:border-gray-600 text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300"
+                >
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                  Account
+                </Button>
+              </Link>
+              <Button
+                variant="default"
+                onClick={handleLogout}
+                className="btn btn-primary flex items-center text-white hover:bg-blue-700 dark:hover:bg-blue-900"
+              >
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
+                    />
+                </svg>
+                Logout
+              </Button>
+            </div>
           ) : (
-            <HeaderButtons isAuthenticated={isAuthenticated} />
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="outline"
+                onClick={openRegisterModal}
+                className="btn btn-outline border-gray-300 dark:border-gray-600 text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300"
+              >
+                Register
+              </Button>
+              <Button
+                variant="default"
+                onClick={openLoginModal}
+                className="btn btn-primary bg-blue-500 hover:bg-blue-600 dark:bg-blue-400 dark:hover:bg-blue-500 text-white"
+              >
+                Login
+              </Button>
+            </div>
           )}
         </div>
       </div>
+      <AuthModal
+        isOpen={isModalOpen}
+        setIsOpen={setIsModalOpen}
+        initialMode={modalMode}
+      />
     </header>
   );
 };
