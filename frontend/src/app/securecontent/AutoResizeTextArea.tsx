@@ -1,4 +1,4 @@
-// src/components/AutoResizeTextArea.tsx
+// src/app/securecontent/AutoResizeTextArea.tsx
 import { useEffect, useRef, useCallback } from 'react';
 import { marked } from 'marked';
 import sanitizeHtml from 'sanitize-html';

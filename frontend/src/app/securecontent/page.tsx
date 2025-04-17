@@ -9,12 +9,12 @@ import { encryptFileTree, decryptFileTree } from '@/lib/crypto';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ClientLayout from "../ClientLayout";
 import ProtectedRoute from '@/components/ProtectedRoute';
-import FileTree from "@/components/FileTree";
+import FileTree from "./FileTree";
 import { SecretKeyProvider, useSecretKey } from '@/context/SecretKeyContext';
-import type { ContentEditorProps } from '@/components/ContentEditor';
+import type { ContentEditorProps } from './ContentEditor';
 
 const ContentEditor = dynamic<ContentEditorProps>(
-  () => import('@/components/ContentEditor').then((mod) => mod.ContentEditor),
+  () => import('./ContentEditor').then((mod) => mod.ContentEditor),
   { ssr: false }
 );
 

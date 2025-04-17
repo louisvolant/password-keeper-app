@@ -1,4 +1,4 @@
-// src/components/FileTree.tsx
+// src/app/securecontent/FileTree.tsx
 "use client";
 import React, { useState, useEffect } from 'react';
 import { ChevronRight, ChevronDown, Folder, FileText, Plus, FolderPlus, Trash2, Pencil } from 'lucide-react';

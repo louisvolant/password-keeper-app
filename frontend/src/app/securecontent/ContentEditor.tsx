@@ -1,4 +1,4 @@
-// src/components/ContentEditor.tsx
+// src/app/securecontent/ContentEditor.tsx
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { updateContent, getFileTree, getContent, updateFileTree, updateAllConten
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import '@/styles/quill-custom.css';
-import { AutoResizeTextArea } from '@/components/AutoResizeTextArea';
+import { AutoResizeTextArea } from './AutoResizeTextArea';
 import TurndownService from 'turndown';
 import { marked } from 'marked';
 import { useSecretKey } from '@/context/SecretKeyContext';
@@ -220,20 +220,28 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
   return (
     <div className="space-y-4">
       {!isContentLoaded ? (
-        <div className="flex gap-2">
-          <Input
-            type="password"
-            placeholder="Secret key"
-            value={secretKey}
-            onChange={(e) => setSecretKey(e.target.value)}
-            className="flex-grow"
-          />
-          <Button
-            onClick={loadContent}
-            disabled={isLoading || !secretKey}
-          >
-            Load content
-          </Button>
+        <div className="space-y-2">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            The secret key is required to encrypt and decrypt your files and file structure using AES-256 encryption.
+            If you’re a new user, enter a strong, unique key to start securing your data.
+            For existing users, use your existing key to access your encrypted files and folder structure.
+            Keep your key safe, as it’s needed to view or edit your content.
+          </p>
+          <div className="flex gap-2">
+            <Input
+              type="password"
+              placeholder="Secret key"
+              value={secretKey}
+              onChange={(e) => setSecretKey(e.target.value)}
+              className="flex-grow"
+            />
+            <Button
+              onClick={loadContent}
+              disabled={isLoading || !secretKey}
+            >
+              Load content
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="space-y-2 mb-4">
