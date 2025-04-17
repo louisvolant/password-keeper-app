@@ -1,6 +1,6 @@
 // src/app/confidentiality-rules/page.tsx
 'use client';
-import { Header } from '@/components/Header';
+import ClientLayout from '@/app/ClientLayout';
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN_URL;
 
@@ -8,8 +8,7 @@ export default function ConfidentialityRulesPage() {
   const contactEmail = `contact [at] ${domain}`; // Construct the email
 
   return (
-      <div>
-        <Header isAuthenticated={false} />
+    <ClientLayout isAuthenticated={false}>
         <div className="container mx-auto p-4 max-w-2xl">
           <h1 className="text-3xl font-bold mb-4">Confidentiality Rules</h1>
 
@@ -28,6 +27,6 @@ export default function ConfidentialityRulesPage() {
             For more information, please contact us at {contactEmail}.
           </p>
         </div>
-    </div>
+    </ClientLayout>
   );
 }

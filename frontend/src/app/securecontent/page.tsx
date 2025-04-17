@@ -87,16 +87,6 @@ function SecureContentInner() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      router.push("/");
-    } catch (err) {
-      console.error("Logout failed:", err);
-      router.push("/");
-    }
-  };
-
   const handleUpdateFiles = (newFiles: string[]) => {
     setFileList(newFiles);
   };
@@ -110,7 +100,7 @@ function SecureContentInner() {
   }
 
   return (
-    <ClientLayout isAuthenticated={true} onLogout={handleLogout}>
+    <ClientLayout isAuthenticated={true}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
         <div className="container mx-auto p-4">
           {error ? (

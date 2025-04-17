@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Header } from '@/components/Header';
+import ClientLayout from '@/app/ClientLayout';
 import { changePassword } from '@/lib/api';
 import axios from 'axios';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -61,9 +62,9 @@ export default function ChangePasswordPage() {
   };
 
   return (
+    <ClientLayout isAuthenticated={true}>
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-        <Header isAuthenticated={true} />
         <main className="container mx-auto p-4 max-w-2xl">
           <Card className="bg-white dark:bg-gray-800 transition-colors">
             <CardContent className="p-6">
@@ -124,5 +125,6 @@ export default function ChangePasswordPage() {
         </main>
       </div>
     </ProtectedRoute>
+    </ClientLayout>
   );
 }

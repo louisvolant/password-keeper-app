@@ -1,6 +1,6 @@
 // src/app/general-conditions/page.tsx
 'use client';
-import { Header } from '@/components/Header';
+import ClientLayout from '@/app/ClientLayout';
 
 const domain = process.env.NEXT_PUBLIC_DOMAIN_URL;
 
@@ -8,8 +8,7 @@ export default function GeneralConditionsPage() {
   const contactEmail = `contact [at] ${domain}`;
 
   return (
-      <div>
-        <Header isAuthenticated={false} />
+    <ClientLayout isAuthenticated={false}>
         <div className="container mx-auto p-4 max-w-2xl">
           <h1 className="text-3xl font-bold mb-4">General Conditions</h1>
 
@@ -27,6 +26,6 @@ export default function GeneralConditionsPage() {
             If you have any questions, please contact us at {contactEmail}.
           </p>
         </div>
-    </div>
+    </ClientLayout>
   );
 }

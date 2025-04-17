@@ -47,17 +47,6 @@ export default function AccountPage() {
     router.push("/account");
   };
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      setIsAuthenticated(false);
-      router.push("/");
-    } catch (err) {
-      console.error("Logout failed:", err);
-      router.push("/");
-    }
-  };
-
   const handleGoogleLogin = () => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '');
     window.location.href = `${apiUrl}/api/auth/google`;
@@ -96,9 +85,7 @@ export default function AccountPage() {
 
   return (
     <ClientLayout
-      isAuthenticated={isAuthenticated ?? false}
-      onLogout={handleLogout}
-    >
+      isAuthenticated={isAuthenticated ?? false}>
     <ProtectedRoute>
       <main className="container mx-auto p-4 max-w-2xl">
           <div className="flex flex-col gap-6">

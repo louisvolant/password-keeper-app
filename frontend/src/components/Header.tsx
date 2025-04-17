@@ -7,9 +7,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import AuthModal from "./AuthModal";
+import { logout } from '@/lib/api';
 
 interface HeaderProps {
   isAuthenticated: boolean;
+  toggleSidebar: () => void;
+  isSidebarOpen: boolean;
 }
 
 export const Header = ({ isAuthenticated }: HeaderProps) => {

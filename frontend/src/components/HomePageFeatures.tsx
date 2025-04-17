@@ -1,4 +1,5 @@
 // src/components/HomePageFeatures.tsx
+"use client";
 
 import Link from "next/link";
 
@@ -7,7 +8,7 @@ interface HomePageFeaturesProps {
   isAuthenticated: boolean;
 }
 
-export const HomePageFeatures = ({ isAuthenticated }: HeaderProps) => {
+export const HomePageFeatures = ({ isAuthenticated }: HomePageFeaturesProps) => {
 
   const handleFeatureClick = () => {
     if (!isAuthenticated) {

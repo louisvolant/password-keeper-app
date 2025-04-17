@@ -1,7 +1,7 @@
 // src/app/temporarycontent/page.tsx
 'use client';
 import { useState } from 'react';
-import { Header } from '@/components/Header';
+import ClientLayout from '@/app/ClientLayout';
 import { saveTemporaryContent, getUserTemporaryContent, deleteUserTemporaryContent } from '@/lib/temporary_content_api';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
@@ -122,9 +122,9 @@ export default function TemporaryContentPage() {
   };
 
   return (
+    <ClientLayout isAuthenticated={true}>
     <ProtectedRoute>
       <div className="min-h-screen bg-base-200 dark:bg-gray-900 transition-colors">
-        <Header isAuthenticated={true} />
         <main className="container mx-auto p-4 max-w-2xl">
           <div className="card bg-base-100 dark:bg-gray-800 shadow-xl p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
@@ -291,5 +291,6 @@ export default function TemporaryContentPage() {
         </main>
       </div>
     </ProtectedRoute>
+    </ClientLayout>
   );
 }

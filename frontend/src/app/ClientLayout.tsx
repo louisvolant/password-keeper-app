@@ -7,13 +7,11 @@ import Navbar from "./Navbar";
 
 interface ClientLayoutProps {
   isAuthenticated: boolean;
-  onLogout?: () => void;
   children: React.ReactNode;
 }
 
 export default function ClientLayout({
   isAuthenticated,
-  onLogout,
   children,
 }: ClientLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -24,7 +22,6 @@ export default function ClientLayout({
     <>
       <Header
         isAuthenticated={isAuthenticated}
-        onLogout={onLogout}
         toggleSidebar={toggleSidebar}
         isSidebarOpen={isSidebarOpen}
       />

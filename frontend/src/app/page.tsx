@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { checkAuth } from "@/lib/api";
-import { Header } from "@/components/Header";
+import ClientLayout from '@/app/ClientLayout';
 import { HomePageFeatures } from "@/components/HomePageFeatures";
 
 export default function Home() {
@@ -38,8 +38,8 @@ export default function Home() {
   }
 
   return (
+    <ClientLayout isAuthenticated={false}>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <Header isAuthenticated={isAuthenticated} />
       <div className="container mx-auto px-4 py-12">
         <section className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
@@ -53,5 +53,6 @@ export default function Home() {
         <HomePageFeatures isAuthenticated={isAuthenticated} />
       </div>
     </div>
+    </ClientLayout>
   );
 }
