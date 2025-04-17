@@ -32,7 +32,7 @@ export const Header = ({ toggleSidebar, isSidebarOpen }: HeaderProps) => {
 
   return (
     <header className="bg-blue-600 dark:bg-blue-800 text-white py-4">
-      <div className="container mx-auto px-4 flex items-center justify-between">
+      <div className="container mx-auto px-4 flex items-center justify-between max-w-screen-xl">
         {/* Left Section: Logo */}
         <div className="flex items-center">
           <Link href="/" className="flex items-center">
@@ -51,10 +51,10 @@ export const Header = ({ toggleSidebar, isSidebarOpen }: HeaderProps) => {
         {/* Right Section: Links and Buttons */}
         <div className="flex items-center space-x-4">
           <nav className="hidden md:flex space-x-4">
-            <Link href="/confidentiality-rules" className="hover:text-gray-200">
+            <Link href="/confidentiality-rules" className="hover:text-gray-200 text-lg">
               Confidentiality Rules
             </Link>
-            <Link href="/general-conditions" className="hover:text-gray-200">
+            <Link href="/general-conditions" className="hover:text-gray-200 text-lg">
               General Conditions
             </Link>
           </nav>
@@ -63,10 +63,10 @@ export const Header = ({ toggleSidebar, isSidebarOpen }: HeaderProps) => {
               <Link href="/account">
                 <Button
                   variant="outline"
-                  className="btn btn-outline border-gray-300 dark:border-gray-600 text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300"
+                    className="btn btn-outline border-gray-300 dark:border-gray-600 text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300 flex items-center px-2 py-1 text-lg"
                 >
                   <svg
-                    className="w-4 h-4 mr-2"
+                    className="w-5 h-5 mr-1"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -79,16 +79,16 @@ export const Header = ({ toggleSidebar, isSidebarOpen }: HeaderProps) => {
                       d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                     />
                   </svg>
-                  Account
+                  <span>Account</span>
                 </Button>
               </Link>
               <Button
                 variant="default"
                 onClick={handleLogout}
-                className="btn btn-primary flex items-center text-white hover:bg-blue-700 dark:hover:bg-blue-900"
+                className="btn btn-primary flex items-center text-white hover:bg-blue-700 dark:hover:bg-blue-900 px-2 py-1 text-lg"
               >
                 <svg
-                  className="w-4 h-4 mr-2"
+                  className="w-5 h-5 mr-1"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -101,7 +101,7 @@ export const Header = ({ toggleSidebar, isSidebarOpen }: HeaderProps) => {
                     d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
                   />
                 </svg>
-                Logout
+                <span>Logout</span>
               </Button>
             </div>
           ) : (
@@ -109,14 +109,14 @@ export const Header = ({ toggleSidebar, isSidebarOpen }: HeaderProps) => {
               <Button
                 variant="outline"
                 onClick={openRegisterModal}
-                className="btn btn-outline border-gray-300 dark:border-gray-600 text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300"
+                className="btn btn-outline border-gray-300 dark:border-gray-600 text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300 px-2 py-1 text-lg"
               >
                 Register
               </Button>
               <Button
                 variant="default"
                 onClick={openLoginModal}
-                className="btn btn-primary bg-blue-500 hover:bg-blue-600 dark:bg-blue-400 dark:hover:bg-blue-500 text-white"
+                className="btn btn-primary bg-blue-500 hover:bg-blue-600 dark:bg-blue-400 dark:hover:bg-blue-500 text-white px-2 py-1 text-lg"
               >
                 Login
               </Button>

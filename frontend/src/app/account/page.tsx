@@ -80,14 +80,6 @@ export default function AccountPage() {
             </div>
             <div className="mt-4 flex gap-4">
               <Button
-                onClick={onLogout}
-                disabled={isDeleting}
-                variant="outline"
-                className="w-full border-blue-500 text-blue-500 hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 rounded-lg py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Logout
-              </Button>
-              <Button
                 onClick={handleAccountDeletion}
                 disabled={isDeleting}
                 variant="outline"
