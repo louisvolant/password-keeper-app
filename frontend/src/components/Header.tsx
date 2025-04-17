@@ -1,9 +1,10 @@
+// src/components/Header.tsx
 "use client";
 
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import AuthModal from "./AuthModal";
 import { logout } from '@/lib/api';
@@ -16,6 +17,7 @@ interface HeaderProps {
 
 export const Header = ({ toggleSidebar, isSidebarOpen }: HeaderProps) => {
   const router = useRouter();
+  const pathname = usePathname();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"login" | "register">("login");
   const { isAuthenticated, handleLogout } = useAuth();
@@ -60,28 +62,30 @@ export const Header = ({ toggleSidebar, isSidebarOpen }: HeaderProps) => {
           </nav>
           {isAuthenticated ? (
             <div className="flex items-center space-x-4">
-              <Link href="/account">
-                <Button
-                  variant="outline"
+              {pathname !== '/account' && (
+                <Link href="/account">
+                  <Button
+                    variant="outline"
                     className="btn btn-outline border-gray-300 dark:border-gray-600 text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300 flex items-center px-2 py-1 text-lg"
-                >
-                  <svg
-                    className="w-5 h-5 mr-1"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
-                  <span>Account</span>
-                </Button>
-              </Link>
+                    <svg
+                      className="w-5 h-5 mr-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      />
+                    </svg>
+                    <span>Account</span>
+                  </Button>
+                </Link>
+              )}
               <Button
                 variant="default"
                 onClick={handleLogout}
