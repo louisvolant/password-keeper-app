@@ -8,7 +8,7 @@ export default function GeneralConditionsPage() {
   const contactEmail = `contact [at] ${domain}`;
 
   return (
-    <ClientLayout isAuthenticated={false}>
+    <ClientLayout>
         <div className="container mx-auto p-4 max-w-2xl">
           <h1 className="text-3xl font-bold mb-4">General Conditions</h1>
 

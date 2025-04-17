@@ -11,7 +11,7 @@ export const metadata = {
 
 export default function PasswordRenewPage() {
   return (
-    <ClientLayout isAuthenticated={false}>
+    <ClientLayout>
       <main className="container mx-auto p-4 max-w-md">
         <h1 className="text-2xl font-bold mb-6">Set New Password</h1>
         <Suspense fallback={<div>Loading reset form...</div>}>

@@ -6,12 +6,10 @@ import { Header } from "@/components/Header";
 import Navbar from "./Navbar";
 
 interface ClientLayoutProps {
-  isAuthenticated: boolean;
   children: React.ReactNode;
 }
 
 export default function ClientLayout({
-  isAuthenticated,
   children,
 }: ClientLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -21,7 +19,6 @@ export default function ClientLayout({
   return (
     <>
       <Header
-        isAuthenticated={isAuthenticated}
         toggleSidebar={toggleSidebar}
         isSidebarOpen={isSidebarOpen}
       />

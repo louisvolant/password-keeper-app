@@ -1,4 +1,3 @@
-// src/components/Header.tsx
 "use client";
 
 import { useState } from "react";
@@ -8,27 +7,18 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import AuthModal from "./AuthModal";
 import { logout } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 interface HeaderProps {
-  isAuthenticated: boolean;
   toggleSidebar: () => void;
   isSidebarOpen: boolean;
 }
 
-export const Header = ({ isAuthenticated }: HeaderProps) => {
+export const Header = ({ toggleSidebar, isSidebarOpen }: HeaderProps) => {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"login" | "register">("login");
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      router.push("/");
-    } catch (error) {
-      console.error("Logout failed:", error);
-      router.push("/");
-    }
-  };
+  const { isAuthenticated, handleLogout } = useAuth();
 
   const openLoginModal = () => {
     setModalMode("login");
@@ -104,12 +94,12 @@ export const Header = ({ isAuthenticated }: HeaderProps) => {
                   viewBox="0 0 24 24"
                   xmlns="http://www.w3.org/2000/svg"
                 >
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
-                    />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
+                  />
                 </svg>
                 Logout
               </Button>

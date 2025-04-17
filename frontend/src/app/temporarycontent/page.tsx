@@ -122,7 +122,7 @@ export default function TemporaryContentPage() {
   };
 
   return (
-    <ClientLayout isAuthenticated={true}>
+    <ClientLayout>
     <ProtectedRoute>
       <div className="min-h-screen bg-base-200 dark:bg-gray-900 transition-colors">
         <main className="container mx-auto p-4 max-w-2xl">

@@ -8,7 +8,7 @@ export default function ConfidentialityRulesPage() {
   const contactEmail = `contact [at] ${domain}`; // Construct the email
 
   return (
-    <ClientLayout isAuthenticated={false}>
+    <ClientLayout>
         <div className="container mx-auto p-4 max-w-2xl">
           <h1 className="text-3xl font-bold mb-4">Confidentiality Rules</h1>
 

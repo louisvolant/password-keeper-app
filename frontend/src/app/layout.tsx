@@ -5,6 +5,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { ReactNode } from "react";
 import Footer from "./Footer";
+import { AuthProvider } from '@/context/AuthContext';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -44,7 +45,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900`}
       >
-        {children}
+          <AuthProvider>
+            {children}
+          </AuthProvider>
         <Footer />
         <SpeedInsights />
       </body>

@@ -1,56 +1,23 @@
-// src/app/account/page.tsx
 'use client';
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { LoginForm } from "@/components/LoginForm";
-import { checkAuth, logout, deleteMyAccount } from "@/lib/api";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Lock } from "lucide-react";
-import ClientLayout from "../ClientLayout";
-import { ConfirmationModal } from "@/components/ConfirmationModal";
-import { Header } from '@/components/Header';
+
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { deleteMyAccount } from '@/lib/api';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button'; // Fixed typo from '@/components graves'
+import { Lock } from 'lucide-react';
+import ClientLayout from '../ClientLayout';
+import { ConfirmationModal } from '@/components/ConfirmationModal';
+import { useAuth } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function AccountPage() {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  const [error, setError] = useState<string>("");
-  const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated, isLoading, handleLogout } = useAuth();
+  const [error, setError] = useState<string>('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    const verifyAuth = async () => {
-      try {
-        const response = await checkAuth();
-        if (response?.isAuthenticated) {
-          setIsAuthenticated(true);
-        } else {
-          setIsAuthenticated(false);
-        }
-      } catch (err) {
-        console.error("Auth check failed:", err);
-        setIsAuthenticated(false);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    verifyAuth();
-  }, [router]);
-
-  const handleLoginSuccess = () => {
-    setError("");
-    setIsAuthenticated(true);
-    router.push("/account");
-  };
-
-  const handleGoogleLogin = () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '');
-    window.location.href = `${apiUrl}/api/auth/google`;
-  };
 
   const handleAccountDeletion = async () => {
     setIsDeleteModalOpen(true);
@@ -61,33 +28,36 @@ export default function AccountPage() {
     try {
       const response = await deleteMyAccount();
       if (response.success) {
-        setIsAuthenticated(false);
-        router.push("/");
+        router.push('/');
       } else {
-        setError(response.error || "Failed to delete account");
+        setError(response.error || 'Failed to delete account');
       }
     } catch (err) {
-      console.error("Account deletion failed:", err);
-      setError("An error occurred while deleting your account");
+      console.error('Account deletion failed:', err);
+      setError('An error occurred while deleting your account');
     } finally {
       setIsDeleting(false);
       setIsDeleteModalOpen(false);
     }
   };
 
+  const onLogout = async () => {
+    await handleLogout();
+    router.push('/');
+  };
+
   if (isLoading) {
     return (
-      <ClientLayout isAuthenticated={false}>
+      <ClientLayout>
         <div className="container mx-auto p-4 max-w-2xl">Loading...</div>
       </ClientLayout>
     );
   }
 
   return (
-    <ClientLayout
-      isAuthenticated={isAuthenticated ?? false}>
-    <ProtectedRoute>
-      <main className="container mx-auto p-4 max-w-2xl">
+    <ClientLayout>
+      <ProtectedRoute>
+        <main className="container mx-auto p-4 max-w-2xl">
           <div className="flex flex-col gap-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Link href="/securecontent">
@@ -108,36 +78,43 @@ export default function AccountPage() {
                 </Button>
               </Link>
             </div>
-            <div className="mt-4">
+            <div className="mt-4 flex gap-4">
+              <Button
+                onClick={onLogout}
+                disabled={isDeleting}
+                variant="outline"
+                className="w-full border-blue-500 text-blue-500 hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600 rounded-lg py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Logout
+              </Button>
               <Button
                 onClick={handleAccountDeletion}
                 disabled={isDeleting}
                 variant="outline"
                 className="w-full border-red-500 text-red-500 hover:bg-red-50 hover:border-red-600 hover:text-red-600 rounded-lg py-3 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isDeleting ? "Deleting..." : "Delete My Account"}
+                {isDeleting ? 'Deleting...' : 'Delete My Account'}
               </Button>
             </div>
           </div>
 
-        {error && (
-          <Alert variant="error" className="mt-4">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+          {error && (
+            <Alert variant="error" className="mt-4">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-        <ConfirmationModal
-          isOpen={isDeleteModalOpen}
-          onClose={() => setIsDeleteModalOpen(false)}
-          onConfirm={confirmAccountDeletion}
-          title="Delete Account"
-          message="Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed."
-          confirmText={isDeleting ? "Deleting..." : "Yes, Delete"}
-          cancelText="No, Cancel"
-        />
-      </main>
-
-     </ProtectedRoute>
+          <ConfirmationModal
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            onConfirm={confirmAccountDeletion}
+            title="Delete Account"
+            message="Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed."
+            confirmText={isDeleting ? 'Deleting...' : 'Yes, Delete'}
+            cancelText="No, Cancel"
+          />
+        </main>
+      </ProtectedRoute>
     </ClientLayout>
   );
 }

@@ -93,14 +93,14 @@ function SecureContentInner() {
 
   if (isLoading) {
     return (
-      <ClientLayout isAuthenticated={true}>
+      <ClientLayout>
         <div className="container mx-auto p-4">Loading...</div>
       </ClientLayout>
     );
   }
 
   return (
-    <ClientLayout isAuthenticated={true}>
+    <ClientLayout>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
         <div className="container mx-auto p-4">
           {error ? (
