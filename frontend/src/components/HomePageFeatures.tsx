@@ -2,13 +2,14 @@
 "use client";
 
 import Link from "next/link";
-
+import { useAuthModal } from "@/context/AuthModalContext"; // Import useAuthModal
 
 interface HomePageFeaturesProps {
   isAuthenticated: boolean;
 }
 
 export const HomePageFeatures = ({ isAuthenticated }: HomePageFeaturesProps) => {
+  const { openLoginModal } = useAuthModal(); // Use useAuthModal to get openLoginModal
 
   const handleFeatureClick = () => {
     if (!isAuthenticated) {
@@ -18,57 +19,63 @@ export const HomePageFeatures = ({ isAuthenticated }: HomePageFeaturesProps) => 
   };
 
   return (
-        <>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Existing Feature 1: Encrypted Files & Folders */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full mb-4">
-              <svg className="w-6 h-6 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 1.104-.896 2-2 2s-2-.896-2-2 2-4 2-4 2 2.896 2 4zm0 0c0 1.104.896 2 2 2s2-.896 2-2-2-4-2-4-2 2.896-2 4zm-4 6v4h8v-4m-10 0h12a2 2 0 002-2v-9a2 2 0 00-2-2H6a2 2 0 00-2 2v9a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              Encrypted Files & Folders
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              Store files and folders encrypted, accessible only with your personal code.
-            </p>
-            <Link
-              href="/securecontent"
-              onClick={(e) => {
-                if (!handleFeatureClick()) e.preventDefault();
-              }}
-              className="inline-block bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 dark:bg-blue-400 dark:hover:bg-blue-500 transition-colors"
-              aria-label="Organize encrypted files and folders"
-            >
-              Organize Now
-            </Link>
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {/* Existing Feature 1: Encrypted Files & Folders */}
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-center w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full mb-4">
+            <svg className="w-6 h-6 text-blue-600 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 1.104-.896 2-2 2s-2-.896-2-2 2-4 2-4 2 2.896 2 4zm0 0c0 1.104.896 2 2 2s2-.896 2-2-2-4-2-4-2 2.896-2 4zm-4 6v4h8v-4m-10 0h12a2 2 0 002-2v-9a2 2 0 00-2-2H6a2 2 0 00-2 2v9a2 2 0 002 2z" />
+            </svg>
           </div>
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            Encrypted Files & Folders
+          </h3>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">
+            Store files and folders encrypted, accessible only with your personal code.
+          </p>
+          <Link
+            href={isAuthenticated ? "/securecontent" : "#"}
+            onClick={(e) => {
+               if (!isAuthenticated) {
+                 e.preventDefault(); // Prevent default navigation
+                 openLoginModal(); // Open the login modal from context
+               }
+            }}
+            className="inline-block bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 dark:bg-blue-400 dark:hover:bg-blue-500 transition-colors"
+            aria-label={isAuthenticated ? "Organize encrypted files and folders" : "Login to organize encrypted files and folders"} // Update aria-label
+          >
+            {isAuthenticated ? "Organize Now" : "Login to Organize"} {/* Conditional Button Text */}
+          </Link>
+        </div>
 
-          {/* Existing Feature 2: Secure Text Sharing */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full mb-4">
-              <svg className="w-6 h-6 text-green-600 dark:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              Secure Text Sharing
-            </h3>
-            <p className="text-gray-600 dark:text-gray-300 mb-4">
-              Share encrypted text via link, accessible only with a shared code.
-            </p>
-            <Link
-              href="/temporarycontent"
-              onClick={(e) => {
-                if (!handleFeatureClick()) e.preventDefault();
-              }}
-              className="inline-block bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 dark:bg-green-500 dark:hover:bg-green-600 transition-colors"
-              aria-label="Share encrypted text securely"
-            >
-              Share Now
-            </Link>
+        {/* Existing Feature 2: Secure Text Sharing */}
+         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-center w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full mb-4">
+            <svg className="w-6 h-6 text-green-600 dark:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
           </div>
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            Secure Text Sharing
+          </h3>
+          <p className="text-gray-600 dark:text-gray-300 mb-4">
+            Share encrypted text via link, accessible only with a shared code.
+          </p>
+          <Link
+            href={isAuthenticated ? "/temporarycontent" : "#"}
+            onClick={(e) => {
+               if (!isAuthenticated) {
+                 e.preventDefault();
+                 openLoginModal();
+               }
+            }}
+            className="inline-block bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 dark:bg-green-500 dark:hover:bg-green-600 transition-colors"
+            aria-label={isAuthenticated ? "Share encrypted text securely" : "Login to share encrypted text securely"}
+          >
+             {isAuthenticated ? "Share Now" : "Login to Share"}
+          </Link>
+        </div>
 
           {/* Coming Soon Feature 1: Secure User Text Sharing */}
           <div className="relative bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-dashed border-yellow-600/70 dark:border-yellow-500/70">
