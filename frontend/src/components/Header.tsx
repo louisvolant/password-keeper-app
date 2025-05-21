@@ -1,23 +1,24 @@
 // src/components/Header.tsx
-"use client";
+'use client';
 
-import Image from "next/image";
-import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
-import { useAuthModal } from '@/context/AuthModalContext'; // Import useAuthModal
+import { useAuthModal } from '@/context/AuthModalContext';
 
 interface HeaderProps {
   toggleSidebar: () => void;
   isSidebarOpen: boolean;
+  isLoading: boolean;
 }
 
-export const Header = ({ toggleSidebar, isSidebarOpen }: HeaderProps) => {
+export const Header = ({ toggleSidebar, isSidebarOpen, isLoading }: HeaderProps) => {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, handleLogout } = useAuth(); // Use AuthContext
-  const { openLoginModal, openRegisterModal } = useAuthModal(); // Use AuthModalContext
+  const { isAuthenticated, handleLogout } = useAuth();
+  const { openLoginModal, openRegisterModal } = useAuthModal();
 
   return (
     <header className="bg-blue-600 dark:bg-blue-800 text-white py-4">
@@ -47,7 +48,12 @@ export const Header = ({ toggleSidebar, isSidebarOpen }: HeaderProps) => {
               General Conditions
             </Link>
           </nav>
-          {isAuthenticated ? (
+          {isLoading ? (
+            <div className="flex items-center space-x-4">
+              <div className="w-24 h-10 bg-gray-300 dark:bg-gray-600 rounded animate-pulse" />
+              <div className="w-24 h-10 bg-gray-300 dark:bg-gray-600 rounded animate-pulse" />
+            </div>
+          ) : isAuthenticated ? (
             <div className="flex items-center space-x-4">
               {pathname !== '/account' && (
                 <Link href="/account">
@@ -75,7 +81,7 @@ export const Header = ({ toggleSidebar, isSidebarOpen }: HeaderProps) => {
               )}
               <Button
                 variant="default"
-                onClick={handleLogout} // handleLogout still comes from AuthContext
+                onClick={handleLogout}
                 className="btn btn-primary flex items-center text-white hover:bg-blue-700 dark:hover:bg-blue-900 px-2 py-1 text-lg"
               >
                 <svg
@@ -99,14 +105,14 @@ export const Header = ({ toggleSidebar, isSidebarOpen }: HeaderProps) => {
             <div className="flex items-center space-x-4">
               <Button
                 variant="outline"
-                onClick={openRegisterModal} // Use openRegisterModal from context
+                onClick={openRegisterModal}
                 className="btn btn-outline border-gray-300 dark:border-gray-600 text-white hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300 px-2 py-1 text-lg"
               >
                 Register
               </Button>
               <Button
                 variant="default"
-                onClick={openLoginModal} // Use openLoginModal from context
+                onClick={openLoginModal}
                 className="btn btn-primary bg-blue-500 hover:bg-blue-600 dark:bg-blue-400 dark:hover:bg-blue-500 text-white px-2 py-1 text-lg"
               >
                 Login

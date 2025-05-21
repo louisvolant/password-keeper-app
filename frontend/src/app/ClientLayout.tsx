@@ -1,27 +1,27 @@
 // src/app/ClientLayout.tsx
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Header } from "@/components/Header";
-import Navbar from "./Navbar";
-import { AuthModalProvider, useAuthModal } from "@/context/AuthModalContext";
-import AuthModal from "@/components/AuthModal";
+import { useState } from 'react';
+import { Header } from '@/components/Header';
+import Navbar from './Navbar';
+import { AuthModalProvider, useAuthModal } from '@/context/AuthModalContext';
+import AuthModal from '@/components/AuthModal';
 
 interface ClientLayoutProps {
   children: React.ReactNode;
+  isLoading: boolean;
 }
 
-export default function ClientLayoutWrapper({ children }: ClientLayoutProps) {
+export default function ClientLayoutWrapper({ children, isLoading }: ClientLayoutProps) {
   return (
     <AuthModalProvider>
-      <ClientLayoutContent>{children}</ClientLayoutContent>
+      <ClientLayoutContent isLoading={isLoading}>{children}</ClientLayoutContent>
     </AuthModalProvider>
   );
 }
 
-function ClientLayoutContent({ children }: ClientLayoutProps) {
+function ClientLayoutContent({ children, isLoading }: ClientLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
   const { isModalOpen, modalMode, setIsOpen } = useAuthModal();
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
@@ -31,13 +31,14 @@ function ClientLayoutContent({ children }: ClientLayoutProps) {
       <Header
         toggleSidebar={toggleSidebar}
         isSidebarOpen={isSidebarOpen}
+        isLoading={isLoading}
       />
       <Navbar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
       {children}
       <AuthModal
         isOpen={isModalOpen}
-        setIsOpen={setIsOpen} // This is the corrected state setter from your context
-        initialMode={modalMode} // Pass the current mode from the context
+        setIsOpen={setIsOpen}
+        initialMode={modalMode}
       />
     </>
   );

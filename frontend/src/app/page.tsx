@@ -8,12 +8,8 @@ import { HomePageFeatures } from '@/components/HomePageFeatures';
 export default function Home() {
   const { isAuthenticated, isLoading } = useAuth();
 
-  if (isLoading) {
-    return <div className="container mx-auto px-4 py-12 text-center">Loading...</div>;
-  }
-
   return (
-    <ClientLayout>
+    <ClientLayout isLoading={isLoading}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4 py-12">
           <section className="text-center mb-16">
