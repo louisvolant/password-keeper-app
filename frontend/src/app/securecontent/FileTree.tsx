@@ -5,8 +5,8 @@ import { ChevronRight, ChevronDown, Folder, FileText, Plus, FolderPlus, Trash2, 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { updateContent, getContent, updateFileTree, removeFile } from '@/lib/secure_content_api';
-import { encryptFileTree } from '@/lib/crypto';
 import { useSecretKey } from '@/context/SecretKeyContext';
+import { encryptContent } from '@/lib/crypto';
 
 interface TreeNode {
   name: string;
@@ -23,10 +23,10 @@ interface IntermediateTreeNode {
 }
 
 interface FileTreeProps {
-  files: string[];
+  files: { file_name: string; uuid: string }[];
   selectedFile: string | null;
   onSelectFile: (path: string | null) => void;
-  onUpdateFiles: (newFiles: string[]) => void;
+  onUpdateFiles: (newFiles: { file_name: string; uuid: string }[]) => void;
 }
 
 const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTreeProps) => {
@@ -35,11 +35,17 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
   const [newItemInput, setNewItemInput] = useState<{ path: string; value: string; type: 'file' | 'folder' } | null>(null);
   const [renameInput, setRenameInput] = useState<{ path: string; value: string } | null>(null);
   const [tree, setTree] = useState<TreeNode[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const buildFileTree = (paths: string[]): TreeNode[] => {
+  const buildFileTree = (files: { file_name: string; uuid: string }[]): TreeNode[] => {
     const root: { [key: string]: IntermediateTreeNode } = {};
 
-    paths.forEach(path => {
+    files.forEach(file => {
+      const path = file.file_name;
+      if (typeof path !== 'string' || !path.trim()) {
+        console.warn('Invalid file_name detected:', file);
+        return;
+      }
       const parts = path.split('/');
       let current = root;
 
@@ -109,87 +115,139 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
 
   const handleAddItem = (folderPath: string, type: 'file' | 'folder') => {
     setNewItemInput({ path: folderPath, value: '', type });
+    setError(null);
+  };
+
+  const sanitizeFileName = (name: string): string => {
+    // Trim and replace invalid characters, allow alphanumeric, hyphens, underscores
+    return name.trim().replace(/[^a-zA-Z0-9-_]/g, '').toLowerCase();
   };
 
   const handleCreateItem = async (folderPath: string) => {
-    if (!newItemInput?.value || !secretKey) return;
+    if (!newItemInput?.value) {
+      setError('File or folder name is required');
+      return;
+    }
+    if (!secretKey || !secretKey.trim()) {
+      setError('Secret key is required to create a file or folder');
+      return;
+    }
 
-    const newPath = folderPath ? `${folderPath}/${newItemInput.value}` : newItemInput.value;
+    const sanitizedName = sanitizeFileName(newItemInput.value);
+    if (!sanitizedName) {
+      setError('Invalid file or folder name');
+      return;
+    }
+
+    const newPath = folderPath ? `${folderPath}/${sanitizedName}` : sanitizedName;
+    const newUuid = crypto.randomUUID();
 
     try {
       const newFiles = [...files];
       if (newItemInput.type === 'file') {
-        await updateContent(newPath, '');
-        newFiles.push(newPath);
+        const encryptedContent = encryptContent('', secretKey);
+        if (!encryptedContent) {
+          throw new Error('Failed to encrypt content for new file');
+        }
+        // Call updateContent and verify success
+        const contentResponse = await updateContent(newPath, encryptedContent);
+        if (!contentResponse?.success) {
+          throw new Error('Failed to create content in UserContent');
+        }
+        newFiles.push({ file_name: newPath, uuid: newUuid });
+        await updateFileTree(newFiles);
+        onUpdateFiles(newFiles);
         onSelectFile(newPath);
       } else {
         const defaultFilePath = `${newPath}/default`;
-        await updateContent(defaultFilePath, '');
-        newFiles.push(defaultFilePath);
+        const defaultUuid = crypto.randomUUID();
+        const encryptedContent = encryptContent('', secretKey);
+        if (!encryptedContent) {
+          throw new Error('Failed to encrypt content for default file in new folder');
+        }
+        const contentResponse = await updateContent(defaultFilePath, encryptedContent);
+        if (!contentResponse?.success) {
+          throw new Error('Failed to create default file content in UserContent');
+        }
+        newFiles.push({ file_name: defaultFilePath, uuid: defaultUuid });
+        await updateFileTree(newFiles);
+        onUpdateFiles(newFiles);
       }
-      const encryptedTree = encryptFileTree(newFiles, secretKey);
-      await updateFileTree(encryptedTree);
-      onUpdateFiles(newFiles);
       setNewItemInput(null);
-    } catch (error) {
+      setError(null);
+    } catch (error: any) {
       console.error(`Error creating ${newItemInput.type}:`, error);
+      setError(`Failed to create ${newItemInput.type}: ${error.message || 'Unknown error'}`);
     }
   };
 
   const handleRemoveFile = async (filePath: string) => {
-    if (!secretKey) return;
-
     try {
       await removeFile(filePath);
-      const newFiles = files.filter(f => f !== filePath);
-      const encryptedTree = encryptFileTree(newFiles, secretKey);
-      await updateFileTree(encryptedTree);
+      const newFiles = files.filter(f => f.file_name !== filePath);
+      await updateFileTree(newFiles);
       onUpdateFiles(newFiles);
       if (selectedFile === filePath) {
-        onSelectFile(newFiles[0] || null);
+        onSelectFile(newFiles[0]?.file_name || null);
       }
     } catch (error) {
       console.error('Error removing file:', error);
+      setError('Failed to remove file');
     }
   };
 
   const handleRename = (path: string, currentName: string) => {
     setRenameInput({ path, value: currentName });
+    setError(null);
   };
 
   const handleConfirmRename = async (oldPath: string, isFolder: boolean) => {
-    if (!renameInput?.value || renameInput.value === oldPath.split('/').pop() || !secretKey) return;
+    if (!renameInput?.value || renameInput.value === oldPath.split('/').pop() || !secretKey) {
+      setError('Invalid new name or missing secret key');
+      return;
+    }
+
+    const sanitizedName = sanitizeFileName(renameInput.value);
+    if (!sanitizedName) {
+      setError('Invalid new name');
+      return;
+    }
 
     const parentPath = oldPath.substring(0, oldPath.lastIndexOf('/'));
-    const newName = renameInput.value;
-    const newPath = parentPath ? `${parentPath}/${newName}` : newName;
+    const newPath = parentPath ? `${parentPath}/${sanitizedName}` : sanitizedName;
 
     try {
       let newFiles = [...files];
       if (isFolder) {
-        const filesToRename = files.filter(f => f.startsWith(oldPath + '/'));
+        const filesToRename = files.filter(f => f.file_name.startsWith(oldPath + '/'));
         for (const file of filesToRename) {
-          const newFilePath = file.replace(oldPath, newPath);
-          const content = await getContent(file);
+          const newFilePath = file.file_name.replace(oldPath, newPath);
+          const content = await getContent(file.file_name);
           await updateContent(newFilePath, content.encoded_content);
-          await removeFile(file);
-          newFiles = newFiles.filter(f => f !== file);
-          newFiles.push(newFilePath);
+          await removeFile(file.file_name);
+          newFiles = newFiles.filter(f => f.file_name !== file.file_name);
+          newFiles.push({ file_name: newFilePath, uuid: file.uuid });
         }
       } else {
+        const file = files.find(f => f.file_name === oldPath);
+        if (!file) {
+          setError('File not found');
+          return;
+        }
         const content = await getContent(oldPath);
         await updateContent(newPath, content.encoded_content);
         await removeFile(oldPath);
-        newFiles = newFiles.filter(f => f !== oldPath);
-        newFiles.push(newPath);
+        newFiles = newFiles.filter(f => f.file_name !== oldPath);
+        newFiles.push({ file_name: newPath, uuid: file.uuid });
         if (selectedFile === oldPath) onSelectFile(newPath);
       }
-      const encryptedTree = encryptFileTree(newFiles, secretKey);
-      await updateFileTree(encryptedTree);
+      await updateFileTree(newFiles);
       onUpdateFiles(newFiles);
       setRenameInput(null);
+      setError(null);
     } catch (error) {
       console.error('Error renaming:', error);
+      setError('Failed to rename');
     }
   };
 
@@ -308,6 +366,7 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
                 Cancel
               </Button>
             </div>
+            {error && <div className="text-red-500 text-sm mt-1">{error}</div>}
           </div>
         )}
 
@@ -357,6 +416,7 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
               Cancel
             </Button>
           </div>
+          {error && <div className="text-red-500 text-sm mt-1">{error}</div>}
         </div>
       )}
 

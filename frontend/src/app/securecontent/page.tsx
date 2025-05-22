@@ -3,9 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { logout } from "@/lib/api";
 import { getContent, getFileTree, updateFileTree } from "@/lib/secure_content_api";
-import { encryptFileTree, decryptFileTree } from '@/lib/crypto';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ClientLayout from "../ClientLayout";
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -18,49 +16,21 @@ const ContentEditor = dynamic<ContentEditorProps>(
   { ssr: false }
 );
 
-// Inner component to use useSecretKey
 function SecureContentInner() {
   const router = useRouter();
   const { secretKey } = useSecretKey();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [encodedContent, setEncodedContent] = useState<string | null>(null);
-  const [fileList, setFileList] = useState<string[]>([]);
+  const [fileList, setFileList] = useState<{ file_name: string; uuid: string }[]>([]);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchFiles = async () => {
       try {
-        const { file_tree } = await getFileTree();
-        let files: string[] = [];
-
-        if (!file_tree) {
-          files = [];
-        } else if (secretKey) {
-          // Check if file_tree is unencrypted JSON
-          try {
-            const parsed = JSON.parse(file_tree);
-            if (Array.isArray(parsed)) {
-              // Unencrypted: encrypt and update
-              const encryptedTree = encryptFileTree(parsed, secretKey);
-              await updateFileTree(encryptedTree);
-              files = parsed;
-            }
-          } catch (e) {
-            // Assume encrypted
-            const decrypted = decryptFileTree(file_tree, secretKey);
-            files = decrypted || [];
-            if (!decrypted && file_tree) {
-              setError("Invalid secret key for file tree");
-            }
-          }
-        } else {
-          // No secretKey: can't decrypt, show empty list
-          files = [];
-        }
-
+        const files = await getFileTree();
         setFileList(files);
-        setSelectedFilePath(files[0] || null);
+        setSelectedFilePath(files[0]?.file_name || null);
       } catch (err) {
         console.error("Error fetching files:", err);
         setError("Failed to load files");
@@ -68,8 +38,8 @@ function SecureContentInner() {
         setIsLoading(false);
       }
     };
-    fetchFiles(); // Run immediately
-  }, [secretKey]);
+    fetchFiles();
+  }, []);
 
   useEffect(() => {
     if (selectedFilePath) {
@@ -87,7 +57,7 @@ function SecureContentInner() {
     }
   };
 
-  const handleUpdateFiles = (newFiles: string[]) => {
+  const handleUpdateFiles = (newFiles: { file_name: string; uuid: string }[]) => {
     setFileList(newFiles);
   };
 

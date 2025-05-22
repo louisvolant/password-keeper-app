@@ -4,13 +4,16 @@ const router = express.Router();
 const { UsersModel, UserFileTreeModel, UserContentModel } = require('../dao/userDao');
 const argon2 = require('argon2');
 const winston = require('winston');
+const { v4: uuidv4 } = require('uuid');
+const CryptoJS = require('crypto-js');
+
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.json(),
   transports: [
     new winston.transports.File({ filename: 'error.log', level: 'error' }),
-    new winston.transports.Console()
-  ]
+    new winston.transports.Console(),
+  ],
 });
 
 const hashPasswordArgon2 = async (password) => {
@@ -28,7 +31,7 @@ router.post('/register', async (req, res) => {
   try {
     // Check for existing user in MongoDB
     const existingUser = await UsersModel.findOne({
-      $or: [{ username }, { email }]
+      $or: [{ username }, { email }],
     });
 
     if (existingUser) {
@@ -37,6 +40,7 @@ router.post('/register', async (req, res) => {
 
     const hashedPassword = await hashPasswordArgon2(password);
     const createdAt = new Date();
+    const defaultFileUUID = uuidv4();
 
     // Create new user in MongoDB
     const newUser = await UsersModel.create({
@@ -45,7 +49,7 @@ router.post('/register', async (req, res) => {
       email,
       hashed_password: hashedPassword,
       password_version: 1,
-      created_at: createdAt
+      created_at: createdAt,
     });
 
     // Use MongoDB-generated _id as the user ID if supabase_id isn't required
@@ -58,20 +62,21 @@ router.post('/register', async (req, res) => {
         supabase_user_id: userId,
         file_tree: '["default"]',
         created_at: createdAt,
-        updated_at: createdAt
+        updated_at: createdAt,
       },
       { upsert: true, new: true }
     );
 
-    // Initialize user content in MongoDB
+    // Initialize user content in MongoDB with file_uuid
     await UserContentModel.findOneAndUpdate(
       { supabase_user_id: userId, file_path: 'default' },
       {
         supabase_user_id: userId,
         file_path: 'default',
+        file_uuid: defaultFileUUID,
         encoded_content: '',
         created_at: createdAt,
-        updated_at: createdAt
+        updated_at: createdAt,
       },
       { upsert: true, new: true }
     );

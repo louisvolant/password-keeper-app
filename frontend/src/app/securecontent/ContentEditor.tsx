@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check } from 'lucide-react';
-import { encryptContent, decryptContent, encryptFileTree, decryptFileTree } from '@/lib/crypto';
+import { encryptContent, decryptContent } from '@/lib/crypto';
 import { updateContent, getFileTree, getContent, updateFileTree, updateAllContent } from '@/lib/secure_content_api';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -147,29 +147,26 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
 
     setIsLoading(true);
     try {
-      const { file_tree } = await getFileTree();
-      const files: string[] = file_tree ? decryptFileTree(file_tree, secretKey) || [] : [];
-      if (!files.length && file_tree) {
-        throw new Error("Invalid old secret key");
+      const files = await getFileTree();
+      if (!files.length) {
+        throw new Error("No files to update");
       }
 
       const contents = await Promise.all(
-        files.map(async (path: string) => {
-          const { encoded_content } = await getContent(path);
+        files.map(async (file: { file_name: string; uuid: string }) => {
+          const { encoded_content } = await getContent(file.file_name);
           return {
-            filePath: path,
+            filePath: file.file_name,
             content: encoded_content ? decryptContent(encoded_content, secretKey) || "" : "",
           };
         })
       );
 
-      const newEncryptedTree = encryptFileTree(files, newSecretKey);
       const newEncryptedContents = contents.map(({ filePath, content }) => ({
         filePath,
         encryptedContent: encryptContent(content, newSecretKey),
       }));
 
-      await updateFileTree(newEncryptedTree);
       await updateAllContent(newEncryptedContents);
       setSecretKey(newSecretKey);
       setNewSecretKey('');
@@ -221,10 +218,9 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
     <div className="space-y-4">
       {!isContentLoaded ? (
         <div className="space-y-2">
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            The secret key is required to encrypt and decrypt your files and file structure using AES-256 encryption.
+          <p className="text-sm text-gray Sargasso sea, deep sea blue, dim grey">The secret key is required to encrypt and decrypt your files using AES-256 encryption.
             If you’re a new user, enter a strong, unique key to start securing your data.
-            For existing users, use your existing key to access your encrypted files and folder structure.
+            For existing users, use your existing key to access your encrypted files.
             Keep your key safe, as it’s needed to view or edit your content.
           </p>
           <div className="flex gap-2">
