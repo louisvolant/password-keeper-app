@@ -1,6 +1,6 @@
 // src/app/securecontent/ContentEditor.tsx
 "use client";
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -22,7 +22,8 @@ export interface ContentEditorProps {
 
 export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorProps) => {
   const { secretKey, setSecretKey } = useSecretKey();
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState(''); // Markdown content
+  const [htmlContent, setHtmlContent] = useState(''); // HTML content for ReactQuill
   const [isContentLoaded, setIsContentLoaded] = useState(false);
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -31,6 +32,7 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
   const [editorMode, setEditorMode] = useState<'visual' | 'markdown'>('visual');
   const [newSecretKey, setNewSecretKey] = useState('');
   const [showKeyChange, setShowKeyChange] = useState(false);
+  const quillRef = useRef<ReactQuill>(null);
 
   const turndownService = new TurndownService({
     headingStyle: 'atx',
@@ -44,8 +46,9 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
 
   const handleQuillChange = useCallback(
     (value: string) => {
-      const markdown = turndownService.turndown(value);
-      setContent(markdown);
+      setHtmlContent(value); // Update HTML content
+      const markdown = turndownService.turndown(value); // Convert to Markdown
+      setContent(markdown); // Update Markdown content
     },
     [turndownService]
   );
@@ -61,12 +64,14 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
     try {
       if (!encodedContent) {
         setContent('');
+        setHtmlContent('');
         setIsContentLoaded(true);
         setMessage('No existing content');
       } else {
         const decrypted = decryptContent(encodedContent, secretKey);
         if (decrypted) {
           setContent(decrypted);
+          setHtmlContent(markdownToHtml(decrypted)); // Initialize HTML content
           setIsContentLoaded(true);
           setMessage('');
         } else {
@@ -80,7 +85,7 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
     } finally {
       setIsLoading(false);
     }
-  }, [secretKey, encodedContent]);
+  }, [secretKey, encodedContent, markdownToHtml]);
 
   useEffect(() => {
     setEncodedContent(initialContent);
@@ -88,6 +93,7 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
       loadContent();
     } else {
       setContent('');
+      setHtmlContent('');
       setMessage('');
       setIsContentLoaded(false);
     }
@@ -282,15 +288,19 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
           {editorMode === 'markdown' ? (
             <AutoResizeTextArea
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={(e) => {
+                setContent(e.target.value);
+                setHtmlContent(markdownToHtml(e.target.value)); // Sync HTML content
+              }}
               placeholder="Enter your markdown content here..."
               minHeight={128}
               showPreview={true}
             />
           ) : (
             <ReactQuill
+              ref={quillRef}
               theme="snow"
-              value={markdownToHtml(content)}
+              value={htmlContent}
               onChange={handleQuillChange}
               modules={quillModules}
               formats={quillFormats}
