@@ -18,9 +18,10 @@ import { useSecretKey } from '@/context/SecretKeyContext';
 export interface ContentEditorProps {
   filePath: string;
   initialContent: string;
+  onContentSaved?: (encodedContent: string) => void; // New callback prop
 }
 
-export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorProps) => {
+export const ContentEditor = ({ filePath, initialContent = '', onContentSaved }: ContentEditorProps) => {
   const { secretKey, setSecretKey } = useSecretKey();
   const [content, setContent] = useState(''); // Markdown content
   const [htmlContent, setHtmlContent] = useState(''); // HTML content for ReactQuill
@@ -134,9 +135,13 @@ export const ContentEditor = ({ filePath, initialContent = '' }: ContentEditorPr
     try {
       const encryptedContent = encryptContent(content, secretKey);
       await updateContent(filePath, encryptedContent);
+      setEncodedContent(encryptedContent); // Update local encodedContent
       setMessage('Content saved successfully');
       setSaveSuccess(true);
-      setEncodedContent(encryptedContent);
+      // Notify parent component
+      onContentSaved?.(encryptedContent);
+      // Since content is already up-to-date, update htmlContent to ensure sync
+      setHtmlContent(markdownToHtml(content));
     } catch (error: unknown) {
       setMessage('Error saving content');
       console.error("Save error:", error);

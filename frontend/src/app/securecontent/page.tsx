@@ -1,6 +1,6 @@
 // src/app/securecontent/page.tsx
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { getContent, getFileTree, updateFileTree } from "@/lib/secure_content_api";
@@ -61,6 +61,11 @@ function SecureContentInner() {
     setFileList(newFiles);
   };
 
+  // Callback to update encodedContent after save
+  const handleContentSaved = useCallback((encodedContent: string) => {
+    setEncodedContent(encodedContent);
+  }, []);
+
   if (isLoading) {
     return (
       <ClientLayout>
@@ -93,6 +98,7 @@ function SecureContentInner() {
                 <ContentEditor
                   filePath={selectedFilePath || ""}
                   initialContent={encodedContent || ""}
+                  onContentSaved={handleContentSaved} // Pass callback
                 />
               </div>
             </div>
