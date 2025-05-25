@@ -61,21 +61,20 @@ function SecureContentInner() {
     setFileList(newFiles);
   };
 
-  // Callback to update encodedContent after save
   const handleContentSaved = useCallback((encodedContent: string) => {
     setEncodedContent(encodedContent);
   }, []);
 
   if (isLoading) {
     return (
-      <ClientLayout>
+      <ClientLayout isLoading={isLoading}>
         <div className="container mx-auto p-4">Loading...</div>
       </ClientLayout>
     );
   }
 
   return (
-    <ClientLayout>
+    <ClientLayout isLoading={isLoading}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
         <div className="container mx-auto p-4">
           {error ? (
@@ -98,7 +97,7 @@ function SecureContentInner() {
                 <ContentEditor
                   filePath={selectedFilePath || ""}
                   initialContent={encodedContent || ""}
-                  onContentSaved={handleContentSaved} // Pass callback
+                  onContentSaved={handleContentSaved}
                 />
               </div>
             </div>

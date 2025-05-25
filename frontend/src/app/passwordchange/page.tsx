@@ -62,7 +62,7 @@ export default function ChangePasswordPage() {
   };
 
   return (
-    <ClientLayout>
+    <ClientLayout isLoading={false}>
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
         <main className="container mx-auto p-4 max-w-2xl">

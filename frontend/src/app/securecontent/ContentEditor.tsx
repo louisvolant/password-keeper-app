@@ -18,7 +18,7 @@ import { useSecretKey } from '@/context/SecretKeyContext';
 export interface ContentEditorProps {
   filePath: string;
   initialContent: string;
-  onContentSaved?: (encodedContent: string) => void; // New callback prop
+  onContentSaved?: (encodedContent: string) => void;
 }
 
 export const ContentEditor = ({ filePath, initialContent = '', onContentSaved }: ContentEditorProps) => {
@@ -39,17 +39,19 @@ export const ContentEditor = ({ filePath, initialContent = '', onContentSaved }:
     headingStyle: 'atx',
     bulletListMarker: '-',
     codeBlockStyle: 'fenced',
+    br: '\n', // Preserve <br> as single newline
+    blankReplacement: (content, node) => (node.nodeName === 'P' ? '\n\n' : ''),
   });
 
   const markdownToHtml = useCallback((markdown: string) => {
-    return marked.parse(markdown, { async: false }) as string;
+    return marked.parse(markdown, { async: false, breaks: true }) as string;
   }, []);
 
   const handleQuillChange = useCallback(
     (value: string) => {
-      setHtmlContent(value); // Update HTML content
-      const markdown = turndownService.turndown(value); // Convert to Markdown
-      setContent(markdown); // Update Markdown content
+      setHtmlContent(value);
+      const markdown = turndownService.turndown(value);
+      setContent(markdown);
     },
     [turndownService]
   );
@@ -71,8 +73,9 @@ export const ContentEditor = ({ filePath, initialContent = '', onContentSaved }:
       } else {
         const decrypted = decryptContent(encodedContent, secretKey);
         if (decrypted) {
+          console.log('Decrypted content:', decrypted); // Debug newlines
           setContent(decrypted);
-          setHtmlContent(markdownToHtml(decrypted)); // Initialize HTML content
+          setHtmlContent(markdownToHtml(decrypted));
           setIsContentLoaded(true);
           setMessage('');
         } else {
@@ -133,15 +136,15 @@ export const ContentEditor = ({ filePath, initialContent = '', onContentSaved }:
 
     setIsLoading(true);
     try {
+      console.log('Content before save:', content); // Debug newlines
       const encryptedContent = encryptContent(content, secretKey);
       await updateContent(filePath, encryptedContent);
-      setEncodedContent(encryptedContent); // Update local encodedContent
+      setEncodedContent(encryptedContent);
       setMessage('Content saved successfully');
       setSaveSuccess(true);
-      // Notify parent component
       onContentSaved?.(encryptedContent);
-      // Since content is already up-to-date, update htmlContent to ensure sync
       setHtmlContent(markdownToHtml(content));
+      console.log('Content after save:', content); // Debug newlines
     } catch (error: unknown) {
       setMessage('Error saving content');
       console.error("Save error:", error);
@@ -193,12 +196,15 @@ export const ContentEditor = ({ filePath, initialContent = '', onContentSaved }:
 
   const quillModules = {
     toolbar: [
-      [{ 'header': [1, 2, false] }],
+      [{ header: [1, 2, false] }],
       ['bold', 'italic', 'underline', 'strike'],
-      [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+      [{ list: 'ordered' }, { list: 'bullet' }],
       ['link'],
       ['clean'],
     ],
+    clipboard: {
+      matchVisual: false, // Prevent extra newlines
+    },
   };
 
   const quillFormats = [
@@ -295,7 +301,7 @@ export const ContentEditor = ({ filePath, initialContent = '', onContentSaved }:
               value={content}
               onChange={(e) => {
                 setContent(e.target.value);
-                setHtmlContent(markdownToHtml(e.target.value)); // Sync HTML content
+                setHtmlContent(markdownToHtml(e.target.value));
               }}
               placeholder="Enter your markdown content here..."
               minHeight={128}

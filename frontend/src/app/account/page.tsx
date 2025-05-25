@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { deleteMyAccount } from '@/lib/api';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button'; // Fixed typo from '@/components graves'
+import { Button } from '@/components/ui/button';
 import { Lock } from 'lucide-react';
 import ClientLayout from '../ClientLayout';
 import { ConfirmationModal } from '@/components/ConfirmationModal';
@@ -48,14 +48,14 @@ export default function AccountPage() {
 
   if (isLoading) {
     return (
-      <ClientLayout>
+      <ClientLayout isLoading={isLoading}>
         <div className="container mx-auto p-4 max-w-2xl">Loading...</div>
       </ClientLayout>
     );
   }
 
   return (
-    <ClientLayout>
+    <ClientLayout isLoading={isLoading}>
       <ProtectedRoute>
         <main className="container mx-auto p-4 max-w-2xl">
           <div className="flex flex-col gap-6">
