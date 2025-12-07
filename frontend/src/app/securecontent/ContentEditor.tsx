@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check } from 'lucide-react';
 import { encryptContent, decryptContent } from '@/lib/crypto';
-import { updateContent, getFileTree, getContent, updateFileTree, updateAllContent } from '@/lib/secure_content_api';
+import { updateContent, getFileTree, getContent, updateAllContent } from '@/lib/secure_content_api';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import '@/styles/quill-custom.css';
@@ -35,13 +35,15 @@ export const ContentEditor = ({ filePath, initialContent = '', onContentSaved }:
   const [showKeyChange, setShowKeyChange] = useState(false);
   const quillRef = useRef<ReactQuill>(null);
 
-  const turndownService = new TurndownService({
-    headingStyle: 'atx',
-    bulletListMarker: '-',
-    codeBlockStyle: 'fenced',
-    br: '\n', // Preserve <br> as single newline
-    blankReplacement: (content, node) => (node.nodeName === 'P' ? '\n\n' : ''),
-  });
+  const turndownService = useCallback(() => {
+    return new TurndownService({
+      headingStyle: 'atx',
+      bulletListMarker: '-',
+      codeBlockStyle: 'fenced',
+      br: '\n',
+      blankReplacement: (content, node) => (node.nodeName === 'P' ? '\n\n' : ''),
+    });
+  }, []);
 
   const markdownToHtml = useCallback((markdown: string) => {
     return marked.parse(markdown, { async: false, breaks: true }) as string;
@@ -50,7 +52,7 @@ export const ContentEditor = ({ filePath, initialContent = '', onContentSaved }:
   const handleQuillChange = useCallback(
     (value: string) => {
       setHtmlContent(value);
-      const markdown = turndownService.turndown(value);
+      const markdown = turndownService().turndown(value);
       setContent(markdown);
     },
     [turndownService]
@@ -83,7 +85,7 @@ export const ContentEditor = ({ filePath, initialContent = '', onContentSaved }:
           setIsContentLoaded(false);
         }
       }
-    } catch (err) {
+    } catch {
       setMessage('Error loading content');
       setIsContentLoaded(false);
     } finally {
@@ -187,8 +189,9 @@ export const ContentEditor = ({ filePath, initialContent = '', onContentSaved }:
       setShowKeyChange(false);
       setIsContentLoaded(false);
       setMessage('Secret key updated');
-    } catch (err) {
+    } catch (err: unknown) {
       setMessage('Failed to update secret key');
+      console.error("Update error:", err);
     } finally {
       setIsLoading(false);
     }

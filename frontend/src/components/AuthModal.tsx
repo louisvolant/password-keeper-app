@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { LoginForm } from "@/components/LoginForm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { googleLogin, login, register } from "@/lib/api";
+import { googleLogin, register } from "@/lib/api";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -85,7 +85,7 @@ export default function AuthModal({ isOpen, setIsOpen, initialMode = "login" }: 
     try {
       await googleLogin();
       // Redirects to Google OAuth, so no further action needed.
-    } catch (err) {
+    } catch {
       setError("Failed to initiate Google login");
     }
   };

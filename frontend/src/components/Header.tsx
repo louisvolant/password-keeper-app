@@ -3,19 +3,16 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { useAuthModal } from '@/context/AuthModalContext';
 
 interface HeaderProps {
-  toggleSidebar: () => void;
-  isSidebarOpen: boolean;
   isLoading: boolean;
 }
 
-export const Header = ({ toggleSidebar, isSidebarOpen, isLoading }: HeaderProps) => {
-  const router = useRouter();
+export const Header = ({ isLoading }: HeaderProps) => {
   const pathname = usePathname();
   const { isAuthenticated, handleLogout } = useAuth();
   const { openLoginModal, openRegisterModal } = useAuthModal();

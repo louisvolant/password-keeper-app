@@ -29,8 +29,6 @@ function ClientLayoutContent({ children, isLoading }: ClientLayoutProps) {
   return (
     <>
       <Header
-        toggleSidebar={toggleSidebar}
-        isSidebarOpen={isSidebarOpen}
         isLoading={isLoading}
       />
       <Navbar isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />

@@ -175,9 +175,9 @@ const FileTree = ({ files, selectedFile, onSelectFile, onUpdateFiles }: FileTree
       }
       setNewItemInput(null);
       setError(null);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`Error creating ${newItemInput.type}:`, error);
-      setError(`Failed to create ${newItemInput.type}: ${error.message || 'Unknown error'}`);
+      setError(`Failed to create ${newItemInput.type}: ${error || 'Unknown error'}`);
     }
   };
 

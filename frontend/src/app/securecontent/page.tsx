@@ -1,14 +1,13 @@
 // src/app/securecontent/page.tsx
 "use client";
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { getContent, getFileTree, updateFileTree } from "@/lib/secure_content_api";
+import { getContent, getFileTree } from "@/lib/secure_content_api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ClientLayout from "../ClientLayout";
 import ProtectedRoute from '@/components/ProtectedRoute';
 import FileTree from "./FileTree";
-import { SecretKeyProvider, useSecretKey } from '@/context/SecretKeyContext';
+import { SecretKeyProvider } from '@/context/SecretKeyContext';
 import type { ContentEditorProps } from './ContentEditor';
 
 const ContentEditor = dynamic<ContentEditorProps>(
@@ -17,8 +16,6 @@ const ContentEditor = dynamic<ContentEditorProps>(
 );
 
 function SecureContentInner() {
-  const router = useRouter();
-  const { secretKey } = useSecretKey();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [encodedContent, setEncodedContent] = useState<string | null>(null);

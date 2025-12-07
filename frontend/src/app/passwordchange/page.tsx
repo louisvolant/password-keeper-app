@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Header } from '@/components/Header';
 import ClientLayout from '@/app/ClientLayout';
 import { changePassword } from '@/lib/api';
 import axios from 'axios';

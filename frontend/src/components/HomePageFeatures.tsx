@@ -9,14 +9,7 @@ interface HomePageFeaturesProps {
 }
 
 export const HomePageFeatures = ({ isAuthenticated }: HomePageFeaturesProps) => {
-  const { openLoginModal } = useAuthModal(); // Use useAuthModal to get openLoginModal
-
-  const handleFeatureClick = () => {
-    if (!isAuthenticated) {
-      return false; // Prevent navigation
-    }
-    return true; // Allow navigation
-  };
+  const { openLoginModal } = useAuthModal();
 
   return (
     <>

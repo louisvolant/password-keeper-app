@@ -14,7 +14,7 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 
 export default function AccountPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading, handleLogout } = useAuth();
+  const { isLoading } = useAuth();
   const [error, setError] = useState<string>('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -39,11 +39,6 @@ export default function AccountPage() {
       setIsDeleting(false);
       setIsDeleteModalOpen(false);
     }
-  };
-
-  const onLogout = async () => {
-    await handleLogout();
-    router.push('/');
   };
 
   if (isLoading) {
