@@ -30,8 +30,8 @@ export const metadata: Metadata = {
     images: ["/icon_shield.png"],
   },
   icons: [
-    { rel: "icon", url: "/icon_shield.svg" },
-    { rel: "apple-touch-icon", url: "/icon_shield.svg" },
+    { rel: "icon", url: "/icon_shield.png" },
+    { rel: "apple-touch-icon", url: "/icon_shield.png" },
   ],
 };
 
