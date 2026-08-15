@@ -2,7 +2,6 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
   withCredentials: true
 });
 
@@ -35,8 +34,7 @@ export const login = async (username: string, password: string) => {
 };
 
 export const googleLogin = async () => {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/+$/, '');
-  window.location.href = `${apiUrl}/api/auth/google`;
+  window.location.href = '/api/auth/google';
 };
 
 export const changePassword = async (newpassword: string) => {

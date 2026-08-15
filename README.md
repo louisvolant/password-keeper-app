@@ -1,137 +1,160 @@
-# Encrypted Content Manager
+# Password Keeper (Securaised)
 
-A secure web application for managing encrypted content with user authentication. Built with Next.js, Express, and Supabase.
+A secure web application for storing encrypted content — notes, files and secrets — with user authentication, client-side AES encryption, and shareable "burn after read" links. Built as a single Next.js app (App Router) that serves both the UI and its own API.
 
 ## Features
 
-- User authentication
-- Client-side content encryption/decryption
-- Secure session management
-- Real-time content saving
-- Responsive UI with shadcn/ui components
+- User authentication (email/username + password, or Google OAuth)
+- Client-side content encryption/decryption (CryptoJS AES)
+- Secure cookie-based sessions
+- Encrypted file tree + content stored in MongoDB
+- Shareable temporary content links (one-read or multi-read) with optional password
+- Automatic expiry of temporary content
+- Responsive UI with TailwindCSS + daisyUI
 
 ## Tech Stack
 
-### Frontend
-- Next.js 14
-- React
-- TypeScript
-- shadcn/ui components
-- TailwindCSS
+- **Framework:** Next.js 15 (App Router)
+- **Language:** TypeScript
+- **API:** Next.js Route Handlers (`src/app/api/`)
+- **Database:** MongoDB (Mongoose)
+- **Auth:** Argon2 password hashing + signed session cookies + Google OAuth
+- **Email:** Mailjet (password reset)
+- **Styling:** TailwindCSS, daisyUI, shadcn/ui-style components
+- **Markdown:** marked + turndown + sanitize-html (in the editor)
 
-### Backend
-- Express.js
-- Supabase
-- express-session for session management
+## Architecture
+
+Single Next.js app, one process, same-origin:
+
+```
+src/
+├── app/                  # Pages (App Router)
+│   └── api/              # Backend API as Route Handlers
+│       ├── login, register, check-auth, logout, delete_my_account
+│       ├── auth/google, auth/callback/google
+│       ├── getcontent, updatecontent, updatecontents
+│       ├── getfiletree, updatefiletree, remove_file, remove_folder, rename
+│       ├── savetemporarycontent, gettemporarycontent,
+│       │   getusertemporarycontent, deleteusertemporarycontent
+│       └── password/change, password/reset/{request,verify,reset}
+├── components/           # Reusable UI components
+├── context/              # Auth / modal / secret-key contexts
+├── lib/                  # Shared helpers (db, session, userDao, crypto, api clients, logger)
+└── styles/               # Global + quill styles
+```
+
+The API route handlers replace the former standalone Express backend. Sessions are signed/encrypted cookies (no external session store needed), and MongoDB is connected lazily per request via `src/lib/db.ts`.
 
 ## Prerequisites
 
 - Node.js 18+
-- npm or yarn
-- Supabase account and project
+- npm
+- A MongoDB Atlas cluster
+- (optional) Google OAuth credentials
+- (optional) Mailjet API keys for password-reset emails
 
 ## Setup
 
-1. Clone the repository:
+1. Clone the repository and install dependencies:
+
 ```bash
 git clone <repository-url>
 cd <project-name>
-```
-
-2. Install dependencies:
-```bash
 npm install
 ```
 
-3. Create a `.env` file in the root directory:
-```env
-# Frontend
-NEXT_PUBLIC_API_URL=http://localhost:3001
+2. Create a `.env.local` file in the root directory (see `.env.example`):
 
-# Backend
-PORT=3001
+```env
 SESSION_COOKIE_KEY=your-secret-key
-CORS_DEV_FRONTEND_URL_AND_PORT=http://localhost:3000
-SUPABASE_URL=your-supabase-url
-SUPABASE_KEY=your-supabase-key
+SALT_SHA_256_HASHING=your-salt
+
+MONGODB_ATLAS_USERNAME=...
+MONGODB_ATLAS_PASSWORD=...
+MONGODB_ATLAS_CLUSTER_URL=...
+MONGODB_ATLAS_DB_NAME=PasswordKeeperDB
+MONGODB_ATLAS_APP_NAME=...
+
+MAILJET_API_KEY=...
+MAILJET_API_SECRET=...
+MAILJET_SENDER_EMAIL=...
+
+FRONTEND_URL=http://localhost:3000
+
+NEXT_PUBLIC_DOMAIN_URL=securaised.net
+NEXT_PUBLIC_BASE_URL=https://www.securaised.net/
+AES_TEMPORARY_CONTENT_DEFAULT_KEY=your-default-key
 ```
 
-4. Initialize the database:
-- Create a new Supabase project
-- Run the provided SQL migrations
-- Set up the necessary tables (users, usercontent)
+3. Start the development server:
 
-## Development
-
-1. Start the development server:
 ```bash
 npm run dev
 ```
 
-2. Run TypeScript checks:
+Open [http://localhost:3000](http://localhost:3000).
+
+## API Endpoints
+
+All endpoints are same-origin under `/api/*` (Route Handlers in `src/app/api/`):
+
+| Method | Endpoint | Auth | Purpose |
+|---|---|---|---|
+| POST | `/api/register` | – | Create an account |
+| POST | `/api/login` | – | Log in |
+| POST | `/api/logout` | ✓ | Log out |
+| POST | `/api/check-auth` | – | Check session status |
+| POST | `/api/delete_my_account` | ✓ | Delete account + all data |
+| GET | `/api/auth/google` | – | Start Google OAuth |
+| GET | `/api/auth/callback/google` | – | Google OAuth callback |
+| GET | `/api/getcontent` | ✓ | Get encrypted content for a file path |
+| POST | `/api/updatecontent` | ✓ | Save content for a file path |
+| POST | `/api/updatecontents` | ✓ | Batch-save multiple contents |
+| GET | `/api/getfiletree` | ✓ | Get the user's file tree |
+| POST | `/api/updatefiletree` | ✓ | Save the user's file tree |
+| POST | `/api/remove_file` | ✓ | Remove a file |
+| POST | `/api/remove_folder` | ✓ | Remove a folder |
+| POST | `/api/rename` | ✓ | Rename a file or folder |
+| POST | `/api/savetemporarycontent` | ✓ | Create a temporary shareable content |
+| GET | `/api/getusertemporarycontent` | ✓ | List the user's temporary links |
+| POST | `/api/deleteusertemporarycontent` | ✓ | Delete one of the user's links |
+| GET | `/api/gettemporarycontent` | – | Read temporary content (by identifier) |
+| POST | `/api/password/change` | ✓ | Change password |
+| POST | `/api/password/reset/request` | – | Request a password reset email |
+| GET | `/api/password/reset/verify` | – | Validate a reset token |
+| POST | `/api/password/reset/reset` | – | Set a new password with a token |
+
+## Development
+
 ```bash
-npm run build
-# then
-npx tsc --noEmit
-# or
-node --no-warnings node_modules/.bin/tsc --noEmit
-# or
-npx --no-warnings tsc --noEmit
+npm run dev        # dev server on :3000
+npm run lint       # ESLint
+npm run build      # production build + typecheck
+npm run postbuild  # next-sitemap (runs automatically after build)
 ```
 
-## Building for Production
+## Deployment (Vercel)
 
-1. Build the application:
-```bash
-npm run build
+The repo includes a `vercel.json` forcing Next.js detection:
+
+```json
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run build"
+}
 ```
 
-2. Start the production server:
-```bash
-npm start
-```
+Set all the env vars from `.env.example` as Vercel Environment Variables, and make sure the Framework Preset is **Next.js**. `serverExternalPackages` in `next.config.js` keeps the native Node packages (`argon2`, `mongoose`, `node-mailjet`, `winston`) external at build time.
 
-## Database Schema
+## Security
 
-### Users Table
-```sql
-CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  username TEXT UNIQUE NOT NULL,
-  hashedpassword TEXT NOT NULL,
-  email TEXT UNIQUE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### User Content Table
-```sql
-CREATE TABLE usercontent (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES users(id),
-  encoded_content TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-## Security Features
-
-- Client-side encryption of content
-- Secure session management
-- HTTP-only cookies
-- CORS protection
-- Password hashing
-- No plaintext storage of sensitive data
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- Client-side AES encryption: plaintext never leaves the browser
+- Argon2 password hashing
+- HTTP-only signed session cookies
+- Reset tokens stored in MongoDB with 24h expiry
+- Temporary content supports burn-after-read and optional password
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details
+This project is licensed under the MIT License.

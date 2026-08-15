@@ -4,7 +4,6 @@ import axios from 'axios';
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
   withCredentials: true
 });
 
