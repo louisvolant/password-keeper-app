@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import { getSession, clearSessionCookie } from '@/lib/session';
 import { UsersModel, TemporaryContentModel } from '@/lib/userDao';
+import { deleteUserVault, getVaultBucket } from '@/lib/vault';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -18,6 +19,10 @@ export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
     await TemporaryContentModel.deleteMany({ supabase_user_id: userId });
+    const bucket = getVaultBucket();
+    if (bucket) {
+      await deleteUserVault(bucket, userId);
+    }
     await UsersModel.deleteOne({ supabase_id: userId });
 
     const response = NextResponse.json({
