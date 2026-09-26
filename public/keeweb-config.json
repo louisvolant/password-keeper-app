@@ -1,0 +1,22 @@
+{
+  "$comment": "KeeWeb runtime configuration for the Securaised personal vault. Serve KeeWeb with ?config=/keeweb-config.json so it opens the managed vault endpoint by default.",
+  "files": [
+    {
+      "storage": "webdav",
+      "name": "My Secure Vault",
+      "path": "/api/vault"
+    }
+  ],
+  "showOnlyFilesFromConfig": true,
+  "settings": {
+    "webdav": true,
+    "webdavSaveMethod": "put",
+    "dropbox": false,
+    "gdrive": false,
+    "onedrive": false,
+    "canOpenDemo": false,
+    "canCreate": true,
+    "canOpen": true,
+    "canOpenStorage": true
+  }
+}

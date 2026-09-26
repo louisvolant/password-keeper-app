@@ -12,6 +12,7 @@
     "postbuild": "next-sitemap",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "keeweb:setup": "bash scripts/fetch-keeweb.sh",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"

@@ -34,10 +34,13 @@ A secure web application for sharing self-destructing ("burn after read") tempor
 
 ## Complete Feature Review
 
-### 1. Zero-Knowledge Personal Vault (`/securecontent`) - *Feature to be built*
+### 1. Zero-Knowledge Personal Vault (`/securecontent`)
 
-- **Status:** Currently in development. Navigating to `/securecontent` displays an informative placeholder page.
-- **Roadmap:** The planned zero-knowledge client-side encrypted vault will feature AES-256 in-memory key management, virtual folder trees, and dual-mode markdown/rich-text editing. All legacy vault-specific endpoints and heavy editor dependencies have been cleared to prepare the core platform for migration.
+- **KeePass-Compatible Vault:** Each authenticated user gets a personal `.kdbx` vault, encrypted client-side by KeeWeb with the user's master password. The server only ever stores ciphertext.
+- **Session-Scoped R2 Proxy (`/api/vault`):** `GET` downloads, `PUT` creates/replaces, `HEAD` stats, and `DELETE` removes the vault stored at `vaults/{userId}/database.kdbx` on Cloudflare R2. The R2 key is derived exclusively from the MongoDB-verified session identity, so accessing another user's vault (IDOR) is impossible and no storage credentials ever reach the browser.
+- **Optimistic Concurrency:** `PUT` honors `If-Match` against the current R2 ETag (`412 Precondition Failed` on conflict); KeeWeb revision checks use the `Last-Modified` header.
+- **Lazy Initialization (Option A):** No server-side `.kdbx` is pre-generated. A `404` on first `GET` lets KeeWeb offer "Create a new file"; the first save flips `hasVault: true` in MongoDB.
+- **Embedded KeeWeb Client:** The static KeeWeb SPA (fetched via `npm run keeweb:setup` from the official `keeweb/keeweb` releases) is served same-origin and pre-configured (`public/keeweb-config.json`) with a locked-down WebDAV connector to `/api/vault`, third-party storages disabled, and `showOnlyFilesFromConfig` enforced. The page also offers backup download, vault deletion, and sync status.
 
 ### 2. Ephemeral Secret Sharing (Burn-After-Read) (`/temporarycontent`)
 
@@ -111,6 +114,8 @@ The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
    - `email`: Unique email address.
    - `hashed_password`: Argon2id or legacy salted SHA-256 hash.
    - `password_version`: Version marker (1 for Argon2id, 2 for legacy).
+   - `hasVault`: Whether a `.kdbx` vault exists on R2 (set on first `PUT /api/vault`).
+   - `vaultLastSync`: Timestamp of the last successful vault save.
    - `created_at`: Creation timestamp.
 
 2. **`TemporaryContent`**:
@@ -155,6 +160,8 @@ The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
 ├── src/
 │   ├── app/                                # Next.js App Router pages and routes
 │   │   ├── api/                            # Backend API Route Handlers
+│   │   │   ├── vault                       # KeePass vault R2 proxy (GET/PUT/HEAD/DELETE/OPTIONS)
+│   │   │   ├── vault/status                # Lightweight vault metadata for the dashboard
 │   │   │   ├── auth/google                 # Google OAuth initialization
 │   │   │   ├── auth/callback/google        # Google OAuth callback & user provisioning
 │   │   │   ├── login                       # Credential login
@@ -168,7 +175,7 @@ The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
 │   │   │   ├── deleteusertemporarycontent  # Revoke an expiring link
 │   │   │   └── password/                   # Change & Mailjet reset handlers
 │   │   ├── account/                        # Account hub & deletion modal
-│   │   ├── securecontent/                  # Vault UI ("Feature to be built" placeholder)
+│   │   ├── securecontent/                  # KeePass vault UI with embedded KeeWeb client
 │   │   ├── temporarycontent/               # Ephemeral link generator & dashboard
 │   │   ├── securelinkview/[id]/            # Public recipient decryption view
 │   │   ├── passwordlost/                   # Forgot password request
@@ -193,6 +200,7 @@ The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
 │   │   └── AuthModalContext.tsx            # Modal visibility & mode switcher
 │   ├── lib/                                # Core utilities & backend connectors
 │   │   ├── db.ts                           # Cached MongoDB Mongoose connection
+│   │   ├── vault.ts                        # Session-scoped R2 vault helpers (keys, ETags, auth)
 │   │   ├── session.ts                      # AES-256-GCM cookie encryption & decryption
 │   │   ├── userDao.ts                      # Mongoose models and validation schemas
 │   │   ├── temporary_content_api.ts        # Client API for temporary link operations
@@ -201,6 +209,10 @@ The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
 │   └── styles/
 │       └── globals.css                     # Tailwind CSS base styles
 ├── public/                                 # Favicons, logos, robots.txt, sitemaps
+│   ├── keeweb-config.json                  # KeeWeb runtime config (managed WebDAV connector)
+│   └── keeweb/                             # KeeWeb static SPA (git-ignored, via npm run keeweb:setup)
+├── scripts/
+│   └── fetch-keeweb.sh                     # Downloads the KeeWeb web app from GitHub releases
 ├── open-next.config.ts                     # OpenNext Cloudflare adapter configuration
 ├── wrangler.jsonc                          # Cloudflare Workers configuration (keep_vars=true)
 ├── next.config.js                          # Next.js configuration
@@ -228,6 +240,11 @@ All endpoints are hosted same-origin under `/api/*`:
 | `GET` | `/api/getusertemporarycontent` | Yes | Returns all active temporary links created by the authenticated user. |
 | `POST` | `/api/deleteusertemporarycontent`| Yes | Manually revokes and deletes a user's temporary link. |
 | `POST` | `/api/password/change` | Yes | Updates password for authenticated user. |
+| `GET` | `/api/vault` | Yes | Downloads the user's `.kdbx` vault (`404` when never created). |
+| `PUT` | `/api/vault` | Yes | Creates/replaces the vault; honors `If-Match`, returns the new `ETag`. |
+| `HEAD` | `/api/vault` | Yes | Vault metadata only (KeeWeb revision checks). |
+| `DELETE` | `/api/vault` | Yes | Permanently removes the user's vault. |
+| `GET` | `/api/vault/status` | Yes | Vault metadata (size, ETag, last sync) without downloading. |
 | `POST` | `/api/password/reset/request` | No | Generates a 24h reset token and sends an email via Mailjet. |
 | `GET` | `/api/password/reset/verify` | No | Validates whether a reset token is valid and unexpired. |
 | `POST` | `/api/password/reset/reset` | No | Sets a new password using a verified reset token. |
@@ -261,6 +278,12 @@ MAILJET_API_KEY=your_mailjet_api_key
 MAILJET_API_SECRET=your_mailjet_api_secret
 MAILJET_SENDER_EMAIL=contact@securaised.net
 ```
+
+> **Vault storage (Cloudflare R2):** no env var is needed. Create the bucket once
+> (`npx wrangler r2 bucket create password-keeper-vaults`, see the `r2_buckets`
+> binding in `wrangler.jsonc`) and vendor the KeeWeb client with
+> `npm run keeweb:setup` (downloads the official static SPA into the
+> git-ignored `public/keeweb/` directory). Local dev emulates R2 automatically.
 
 ---
 

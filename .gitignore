@@ -64,3 +64,6 @@ build/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# KeeWeb static client (vendored via npm run keeweb:setup, never committed)
+/public/keeweb/
