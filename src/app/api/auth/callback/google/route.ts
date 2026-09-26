@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
   try {
     await connectToDatabase();
-    const redirectUri = process.env.REDIRECT_URI || `${request.nextUrl.origin}/api/auth/callback/google`;
+    const redirectUri = `${request.nextUrl.origin}/api/auth/callback/google`;
 
     const tokenResponse = await axios.post(
       'https://oauth2.googleapis.com/token',

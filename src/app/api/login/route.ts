@@ -1,21 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import argon2 from 'argon2';
-import crypto from 'crypto';
 import { connectToDatabase } from '@/lib/db';
 import { UsersModel } from '@/lib/userDao';
 import { setSessionCookie } from '@/lib/session';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
-
-const hashPasswordSha256 = (password: string) => {
-  const salt = process.env.SALT_SHA_256_HASHING || 'SALT-SHA-256';
-  return crypto.createHash('sha256').update(password + salt).digest('hex');
-};
-
-const verifyPassword = async (password: string, hash: string) => {
-  return await argon2.verify(hash, password);
-};
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,9 +31,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 });
     }
 
-    const isValidPassword = userData.password_version === 1
-      ? await verifyPassword(password, userData.hashed_password)
-      : hashPasswordSha256(password) === userData.hashed_password;
+    const isValidPassword = await argon2.verify(userData.hashed_password, password);
 
     if (!isValidPassword) {
       return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 });
