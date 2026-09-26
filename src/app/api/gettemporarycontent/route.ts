@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import argon2 from 'argon2';
 import { connectToDatabase } from '@/lib/db';
 import { TemporaryContentModel } from '@/lib/userDao';
+import { verifyContentPassword } from '@/lib/password';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       if (!password) {
         return NextResponse.json({ success: false, error: 'Password required' }, { status: 403 });
       }
-      const isValid = await argon2.verify(content.hashed_password, password);
+      const isValid = await verifyContentPassword(content.hashed_password, password);
       if (!isValid) {
         return NextResponse.json({ success: false, error: 'Invalid password' }, { status: 403 });
       }

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import argon2 from 'argon2';
 import { v4 as uuidv4 } from 'uuid';
 import { connectToDatabase } from '@/lib/db';
 import { getSession } from '@/lib/session';
 import { TemporaryContentModel } from '@/lib/userDao';
+import { hashContentPassword } from '@/lib/password';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
     const identifier = uuidv4();
-    const hashedPassword = password ? await argon2.hash(password, { type: argon2.argon2id, memoryCost: 2 ** 16, timeCost: 3, parallelism: 1 }) : null;
+    const hashedPassword = password ? await hashContentPassword(password) : null;
     const createdAt = new Date();
 
     const newContent = await TemporaryContentModel.create({

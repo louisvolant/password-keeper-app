@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import argon2 from 'argon2';
 import { connectToDatabase } from '@/lib/db';
 import { getSession } from '@/lib/session';
 import { UsersModel } from '@/lib/userDao';
+import { hashPassword } from '@/lib/password';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
-
-const hashPasswordArgon2 = async (password: string) => {
-  return await argon2.hash(password, { type: argon2.argon2id, memoryCost: 2 ** 16, timeCost: 3, parallelism: 1 });
-};
 
 export async function POST(request: NextRequest) {
   const user = await getSession(request);
@@ -26,11 +22,11 @@ export async function POST(request: NextRequest) {
 
   try {
     await connectToDatabase();
-    const hashedPassword = await hashPasswordArgon2(newpassword);
+    const { hash: hashedPassword, version: passwordVersion } = await hashPassword(newpassword);
 
     const updatedUser = await UsersModel.findOneAndUpdate(
       { supabase_id: user.id },
-      { hashed_password: hashedPassword, password_version: 1 },
+      { hashed_password: hashedPassword, password_version: passwordVersion },
       { new: true }
     );
 

@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import argon2 from 'argon2';
 import { v4 as uuidv4 } from 'uuid';
 import { connectToDatabase } from '@/lib/db';
 import { UsersModel } from '@/lib/userDao';
+import { hashPassword } from '@/lib/password';
 import { setSessionCookie } from '@/lib/session';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
-
-const hashPasswordArgon2 = async (password: string) => {
-  return await argon2.hash(password, { type: argon2.argon2id, memoryCost: 2 ** 16, timeCost: 3, parallelism: 1 });
-};
 
 export async function POST(request: NextRequest) {
   const { username, email, password } = await request.json();
@@ -30,7 +26,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Username or email already exists' }, { status: 409 });
     }
 
-    const hashedPassword = await hashPasswordArgon2(password);
+    const { hash: hashedPassword, version: passwordVersion } = await hashPassword(password);
     const createdAt = new Date();
     const userId = uuidv4();
 
@@ -39,7 +35,7 @@ export async function POST(request: NextRequest) {
       username,
       email,
       hashed_password: hashedPassword,
-      password_version: 1,
+      password_version: passwordVersion,
       created_at: createdAt,
     });
 

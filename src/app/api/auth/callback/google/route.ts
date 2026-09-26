@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
-import argon2 from 'argon2';
 import crypto from 'crypto';
 import { connectToDatabase } from '@/lib/db';
 import { UsersModel } from '@/lib/userDao';
+import { hashPassword } from '@/lib/password';
 import { setSessionCookie } from '@/lib/session';
 
 export const runtime = 'nodejs';
@@ -41,21 +41,16 @@ export async function GET(request: NextRequest) {
     let userData = await UsersModel.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
 
     if (!userData) {
-      const randomStr = Math.random().toString(36).substring(2, 10);
+      const randomStr = crypto.randomBytes(4).toString('hex');
       const username = `user_${randomStr}`;
-      const password = Math.random().toString(36).slice(-15);
-      const hashedPassword = await argon2.hash(password, {
-        type: argon2.argon2id,
-        memoryCost: 2 ** 16,
-        timeCost: 3,
-        parallelism: 1,
-      });
+      const password = crypto.randomBytes(32).toString('hex');
+      const { hash: hashedPassword, version: passwordVersion } = await hashPassword(password);
 
       userData = await UsersModel.create({
         email,
         username,
         hashed_password: hashedPassword,
-        password_version: 1,
+        password_version: passwordVersion,
         supabase_id: crypto.randomUUID(),
       });
     }

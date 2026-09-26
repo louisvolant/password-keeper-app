@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import argon2 from 'argon2';
 import { connectToDatabase } from '@/lib/db';
 import { UsersModel } from '@/lib/userDao';
+import { verifyPassword } from '@/lib/password';
 import { setSessionCookie } from '@/lib/session';
 import { logger } from '@/lib/logger';
 
@@ -31,7 +31,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 });
     }
 
-    const isValidPassword = await argon2.verify(userData.hashed_password, password);
+    const isValidPassword = await verifyPassword(
+      userData.hashed_password,
+      userData.password_version,
+      password
+    );
 
     if (!isValidPassword) {
       return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 });

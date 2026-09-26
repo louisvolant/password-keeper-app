@@ -97,7 +97,7 @@ A secure web application for sharing self-destructing ("burn after read") tempor
 | **Vault Encryption** | Client-Side AES-256 (`crypto-js`). Plaintext never reaches the server. |
 | **Vault Key Storage** | Kept exclusively in transient React state. Never saved to disk or storage. |
 | **Session Tokens** | AES-256-GCM encrypted payload (`iv:tag:ciphertext`) stored in `HttpOnly` cookies. |
-| **User Passwords** | Argon2id (`memoryCost: 65536`, `timeCost: 3`, `parallelism: 1`). |
+| **User Passwords** | Argon2id (`memoryCost: 65536`, `timeCost: 3`, `parallelism: 1`) on Node.js, PBKDF2-SHA256 (600k iterations, WebCrypto) fallback on Cloudflare Workers where native modules cannot load. |
 | **Temporary Links** | AES-256-CBC with random 16-byte IV. Passwords verified with Argon2id. |
 | **Reset Tokens** | 32-byte random hex tokens stored with 24-hour TTL in MongoDB. |
 | **Database Access** | Parameterized queries with Mongoose ODM against MongoDB Atlas. |
@@ -113,7 +113,7 @@ The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
    - `username`: Unique username (case-insensitive search).
    - `email`: Unique email address.
    - `hashed_password`: Argon2id or legacy salted SHA-256 hash.
-   - `password_version`: Version marker (1 for Argon2id, 2 for legacy).
+   - `password_version`: Version marker (1 for Argon2id, 3 for PBKDF2-SHA256 on Workers).
    - `hasVault`: Whether a `.kdbx` vault exists on R2 (set on first `PUT /api/vault`).
    - `vaultLastSync`: Timestamp of the last successful vault save.
    - `created_at`: Creation timestamp.
