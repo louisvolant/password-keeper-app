@@ -18,6 +18,12 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  "r2_buckets": [
+    {
+      "binding": "VAULTS_BUCKET",
+      "bucket_name": "password-keeper-vaults"
+    }
+  ],
   "observability": {
     "enabled": true
   },

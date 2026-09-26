@@ -6,6 +6,8 @@ const usersSchema = new Schema({
   email: { type: String, required: true, unique: true },
   hashed_password: { type: String, required: true },
   password_version: { type: Number, default: 1 },
+  hasVault: { type: Boolean, default: false },
+  vaultLastSync: { type: Date, default: null },
   created_at: { type: Date, default: Date.now }
 });
 
