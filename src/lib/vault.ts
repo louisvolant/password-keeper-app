@@ -3,6 +3,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { connectToDatabase } from '@/lib/db';
 import { getSession } from '@/lib/session';
 import { UsersModel } from '@/lib/userDao';
+import { logger } from '@/lib/logger';
 
 // Maximum accepted vault size: 20 MiB (a .kdbx file rarely exceeds a few MB).
 export const VAULT_MAX_BYTES = 20 * 1024 * 1024;
@@ -79,35 +80,43 @@ export interface VaultAuthSuccess {
 }
 
 export interface VaultAuthFailure {
-  status: 401 | 400;
+  status: 401 | 400 | 500;
   error: string;
 }
 
 // Validate the session cookie and confirm the user still exists in MongoDB.
 // The returned userId is the only value ever used to build the R2 key.
+// Never throws: infrastructure failures are reported as 500 auth failures so
+// route handlers always answer JSON instead of crashing the Worker.
 export async function resolveVaultUser(
   request: NextRequest
 ): Promise<VaultAuthSuccess | VaultAuthFailure> {
-  const session = await getSession(request);
-  if (!session) {
-    return { status: 401, error: 'Unauthorized - Please log in' };
+  try {
+    const session = await getSession(request);
+    if (!session) {
+      return { status: 401, error: 'Unauthorized - Please log in' };
+    }
+    if (!isSafeUserId(session.id)) {
+      return { status: 400, error: 'Invalid session identity' };
+    }
+    await connectToDatabase();
+    const doc = await UsersModel.findOne({ supabase_id: session.id }).lean<{
+      hasVault?: boolean;
+      vaultLastSync?: Date | null;
+    }>();
+    if (!doc) {
+      return { status: 401, error: 'Unauthorized - Unknown user' };
+    }
+    return {
+      userId: session.id,
+      hasVault: doc.hasVault === true,
+      vaultLastSync: doc.vaultLastSync ?? null,
+    };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    logger.error('Vault authentication failed:', { message });
+    return { status: 500, error: 'Internal server error' };
   }
-  if (!isSafeUserId(session.id)) {
-    return { status: 400, error: 'Invalid session identity' };
-  }
-  await connectToDatabase();
-  const doc = await UsersModel.findOne({ supabase_id: session.id }).lean<{
-    hasVault?: boolean;
-    vaultLastSync?: Date | null;
-  }>();
-  if (!doc) {
-    return { status: 401, error: 'Unauthorized - Unknown user' };
-  }
-  return {
-    userId: session.id,
-    hasVault: doc.hasVault === true,
-    vaultLastSync: doc.vaultLastSync ?? null,
-  };
 }
 
 function stripQuotes(value: string): string {

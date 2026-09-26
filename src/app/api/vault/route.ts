@@ -13,7 +13,7 @@ import {
 
 export const runtime = 'nodejs';
 
-function unauthorized(error: string, status: 401 | 400 = 401) {
+function unauthorized(error: string, status: 401 | 400 | 500 = 401) {
   return NextResponse.json({ success: false, error }, { status });
 }
 
