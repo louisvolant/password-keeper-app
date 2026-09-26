@@ -7,10 +7,15 @@ import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-const mailjet = new Mailjet({
-  apiKey: process.env.MAILJET_API_KEY || '',
-  apiSecret: process.env.MAILJET_API_SECRET || ''
-});
+// The Mailjet client is created lazily inside the handler: constructing it at
+// module scope throws during `next build` page-data collection when the API
+// keys are not set in the build environment, which fails the whole build.
+function getMailjetClient() {
+  return new Mailjet({
+    apiKey: process.env.MAILJET_API_KEY || '',
+    apiSecret: process.env.MAILJET_API_SECRET || ''
+  });
+}
 
 export async function POST(request: NextRequest) {
   const { email } = await request.json();
@@ -45,6 +50,7 @@ export async function POST(request: NextRequest) {
     const resetUrl = `${baseUrl}/passwordrenew?token=${token}`;
 
     if (process.env.MAILJET_API_KEY && process.env.MAILJET_API_SECRET) {
+      const mailjet = getMailjetClient();
       await mailjet.post('send', { version: 'v3.1' }).request({
         Messages: [{
           From: {
