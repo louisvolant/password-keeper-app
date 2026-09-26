@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import { getSession, clearSessionCookie } from '@/lib/session';
-import { UsersModel, UserContentModel, UserFileTreeModel, TemporaryContentModel } from '@/lib/userDao';
+import { UsersModel, TemporaryContentModel } from '@/lib/userDao';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -18,8 +18,6 @@ export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
     await TemporaryContentModel.deleteMany({ supabase_user_id: userId });
-    await UserContentModel.deleteMany({ supabase_user_id: userId });
-    await UserFileTreeModel.deleteMany({ supabase_user_id: userId });
     await UsersModel.deleteOne({ supabase_id: userId });
 
     const response = NextResponse.json({

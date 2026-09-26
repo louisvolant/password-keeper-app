@@ -1,160 +1,324 @@
-# Password Keeper (Securaised)
+# Securaised (Password Keeper)
 
-A secure web application for storing encrypted content — notes, files and secrets — with user authentication, client-side AES encryption, and shareable "burn after read" links. Built as a single Next.js app (App Router) that serves both the UI and its own API.
+A secure, zero-knowledge web application for managing encrypted personal vaults (notes, secrets, and credentials) and sharing self-destructing ("burn after read") temporary content. Built as a unified full-stack application using **Next.js (App Router)**, **React 19**, **TypeScript**, and **MongoDB**.
 
-## Features
+---
 
-- User authentication (email/username + password, or Google OAuth)
-- Client-side content encryption/decryption (CryptoJS AES)
-- Secure cookie-based sessions
-- Encrypted file tree + content stored in MongoDB
-- Shareable temporary content links (one-read or multi-read) with optional password
-- Automatic expiry of temporary content
-- Responsive UI with TailwindCSS + daisyUI
+## Table of Contents
+
+- [Overview & Core Value](#overview--core-value)
+- [Complete Feature Review](#complete-feature-review)
+  - [1. Zero-Knowledge Personal Vault](#1-zero-knowledge-personal-vault)
+  - [2. Ephemeral Secret Sharing (Burn-After-Read)](#2-ephemeral-secret-sharing-burn-after-read)
+  - [3. Authentication & Account Management](#3-authentication--account-management)
+  - [4. UI/UX & Responsive Experience](#4-uiux--responsive-experience)
+- [Security Architecture & Cryptography](#security-architecture--cryptography)
+- [Database Schema (MongoDB)](#database-schema-mongodb)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [API Reference](#api-reference)
+- [Environment Variables](#environment-variables)
+- [Getting Started](#getting-started)
+- [Deployment (Vercel)](#deployment-vercel)
+- [License](#license)
+
+---
+
+## Overview & Core Value
+
+**Securaised** solves two distinct security challenges in a single web interface:
+1. **Encrypted Vault Storage:** Store private notes, credentials, and snippets in an organized file and folder hierarchy where data is encrypted client-side before transmission. The server never receives or stores your plaintext or master encryption key.
+2. **Ephemeral Secret Sharing:** Share sensitive text snippets (passwords, tokens, credentials) with colleagues or recipients via expiring, single-use, or password-protected temporary links.
+
+---
+
+## Complete Feature Review
+
+### 1. Zero-Knowledge Personal Vault (`/securecontent`) - *Feature to be built*
+
+- **Status:** Currently in development. Navigating to `/securecontent` displays an informative placeholder page.
+- **Roadmap:** The planned zero-knowledge client-side encrypted vault will feature AES-256 in-memory key management, virtual folder trees, and dual-mode markdown/rich-text editing. All legacy vault-specific endpoints and heavy editor dependencies have been cleared to prepare the core platform for migration.
+
+### 2. Ephemeral Secret Sharing (Burn-After-Read) (`/temporarycontent`)
+
+- **Customizable Access Strategies:**
+  - **Burn After Read (`oneread`):** Content is permanently deleted from MongoDB immediately after the first successful retrieval.
+  - **Multiple Reads (`multipleread`):** Content remains accessible until the specified expiration deadline.
+- **Configurable Expiration:** Choose lifespan intervals of **1 Hour**, **1 Day**, **1 Week**, or **1 Month**. Expired content is purged upon lookup or via deletion.
+- **Optional Password Protection:** Add an optional password (minimum 8 characters) to encrypt the content. Passwords are hashed with `Argon2id` on the server before verification.
+- **Dual-Layer Content Encryption:** Text is encrypted with AES-256-CBC using a per-secret random 16-byte initialization vector (IV) and a key derived from the password (or a fallback default key).
+- **Public Recipient Interface (`/securelinkview/[id]`):**
+  - Standalone reader interface for external recipients.
+  - Detects password-protected links and presents a clean decryption prompt.
+  - Displays read-only decrypted text once validated.
+- **User Link Management Dashboard:** Authenticated users can review active temporary links, check expiration timestamps, copy links to clipboard, or manually revoke/delete links before expiration.
+
+### 3. Authentication & Account Management
+
+- **Credentials Authentication:**
+  - Email/username + password registration and login.
+  - Minimum password length policy of 15 characters enforced on registration.
+  - High-security password hashing using **Argon2id** (`memoryCost: 65536`, `timeCost: 3`, `parallelism: 1`).
+  - Backward compatibility support for SHA-256 salted hashes.
+- **Google OAuth 2.0 Integration:**
+  - One-click Google Sign-In via `/api/auth/google` and `/api/auth/callback/google`.
+  - Automatic account provisioning with unique generated usernames and Argon2-hashed passwords.
+- **Session Security:**
+  - Stateless, encrypted session cookies using AES-256-GCM with authentication tags (`session.ts`).
+  - Signed, `HttpOnly`, `SameSite=Lax`, and `Secure` (in production) cookies with 24-hour expiration.
+  - Protected client routes via `<ProtectedRoute>` wrapper with automatic redirect to login modal.
+- **Password Reset Flow:**
+  - Forgot password request (`/passwordlost`) generating cryptographically secure 32-byte tokens valid for 24 hours.
+  - Transactional reset email delivery via **Mailjet API**.
+  - Secure token verification and reset interface (`/passwordrenew?token=...`).
+  - In-app password change for authenticated users (`/passwordchange`).
+- **Complete Account Deletion (GDPR-Compliant):**
+  - User-initiated one-click deletion modal with confirmation safeguards (`/account`).
+  - Completely wipes user credentials, file tree, vault contents, and temporary links from MongoDB.
+  - Clears active session cookies and redirects to the landing page.
+
+### 4. UI/UX & Responsive Experience
+
+- **Theme Engine:** Fully integrated Light and Dark mode toggle with `localStorage` persistence and automatic fallback to `prefers-color-scheme`.
+- **Responsive Layout:** Adaptive desktop navigation bar and mobile drawer sidebar (`Navbar.tsx` and `Header.tsx`).
+- **Modal System:** Context-driven modal architecture (`AuthModalContext`) supporting seamless switching between Login and Registration dialogs without page reloads.
+- **External Network Hub:** Curated directory of companion tools and projects integrated into navigation and footer.
+- **Performance & SEO:** Pre-configured `@vercel/speed-insights`, automated `next-sitemap` generation on build, OpenGraph social cards, and mobile-friendly touch targets.
+
+---
+
+## Security Architecture & Cryptography
+
+| Security Dimension | Implementation |
+|---|---|
+| **Vault Encryption** | Client-Side AES-256 (`crypto-js`). Plaintext never reaches the server. |
+| **Vault Key Storage** | Kept exclusively in transient React state. Never saved to disk or storage. |
+| **Session Tokens** | AES-256-GCM encrypted payload (`iv:tag:ciphertext`) stored in `HttpOnly` cookies. |
+| **User Passwords** | Argon2id (`memoryCost: 65536`, `timeCost: 3`, `parallelism: 1`). |
+| **Temporary Links** | AES-256-CBC with random 16-byte IV. Passwords verified with Argon2id. |
+| **Reset Tokens** | 32-byte random hex tokens stored with 24-hour TTL in MongoDB. |
+| **Database Access** | Parameterized queries with Mongoose ODM against MongoDB Atlas. |
+
+---
+
+## Database Schema (MongoDB)
+
+The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
+
+1. **`Users`**:
+   - `supabase_id`: Unique user UUID.
+   - `username`: Unique username (case-insensitive search).
+   - `email`: Unique email address.
+   - `hashed_password`: Argon2id or legacy salted SHA-256 hash.
+   - `password_version`: Version marker (1 for Argon2id, 2 for legacy).
+   - `created_at`: Creation timestamp.
+
+2. **`TemporaryContent`**:
+   - `supabase_user_id`: Creator UUID.
+   - `identifier`: Public UUID for access URL.
+   - `hashed_password`: Optional Argon2id hash for password-protected links.
+   - `max_date`: Expiration date.
+   - `encoded_content`: AES-256-CBC encrypted payload.
+   - `iv`: Initialization vector in hex format.
+   - `strategy`: `'oneread'` or `'multipleread'`.
+   - `created_at`: Creation timestamp.
+
+3. **`PasswordResetTokens`**:
+   - `supabase_user_id`: User UUID.
+   - `token`: 64-character hex reset token.
+   - `expires_at`: 24-hour expiration timestamp.
+   - `created_at`: Creation timestamp.
+   - `expires_at`: 24-hour expiration timestamp.
+   - `created_at`: Creation timestamp.
+
+---
 
 ## Tech Stack
 
-- **Framework:** Next.js 15 (App Router)
-- **Language:** TypeScript
-- **API:** Next.js Route Handlers (`src/app/api/`)
-- **Database:** MongoDB (Mongoose)
-- **Auth:** Argon2 password hashing + signed session cookies + Google OAuth
-- **Email:** Mailjet (password reset)
-- **Styling:** TailwindCSS, daisyUI, shadcn/ui-style components
-- **Markdown:** marked + turndown + sanitize-html (in the editor)
+- **Framework:** [Next.js](https://nextjs.org/) (App Router, Route Handlers)
+- **Frontend Library:** [React 19](https://react.dev/)
+- **Language:** [TypeScript](https://www.typescriptlang.org/)
+- **Database & ODM:** [MongoDB Atlas](https://www.mongodb.com/atlas) with [Mongoose](https://mongoosejs.com/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/) & [daisyUI](https://daisyui.com/)
+- **Cryptography & Auth:** `argon2`, `crypto-js`, native Node.js `crypto`
+- **Rich Text & Parsing:** `react-quill-new`, `turndown`, `marked`, `sanitize-html`
+- **Email Service:** `node-mailjet` (Mailjet v3.1 API)
+- **HTTP Client:** `axios`
+- **Icons:** `lucide-react`
+- **Analytics & SEO:** `@vercel/speed-insights`, `next-sitemap`
 
-## Architecture
+---
 
-Single Next.js app, one process, same-origin:
+## Project Structure
 
 ```
-src/
-├── app/                  # Pages (App Router)
-│   └── api/              # Backend API as Route Handlers
-│       ├── login, register, check-auth, logout, delete_my_account
-│       ├── auth/google, auth/callback/google
-│       ├── getcontent, updatecontent, updatecontents
-│       ├── getfiletree, updatefiletree, remove_file, remove_folder, rename
-│       ├── savetemporarycontent, gettemporarycontent,
-│       │   getusertemporarycontent, deleteusertemporarycontent
-│       └── password/change, password/reset/{request,verify,reset}
-├── components/           # Reusable UI components
-├── context/              # Auth / modal / secret-key contexts
-├── lib/                  # Shared helpers (db, session, userDao, crypto, api clients, logger)
-└── styles/               # Global + quill styles
+.
+├── src/
+│   ├── app/                                # Next.js App Router pages and routes
+│   │   ├── api/                            # Backend API Route Handlers
+│   │   │   ├── auth/google                 # Google OAuth initialization
+│   │   │   ├── auth/callback/google        # Google OAuth callback & user provisioning
+│   │   │   ├── login                       # Credential login
+│   │   │   ├── register                    # User registration
+│   │   │   ├── logout                      # Session invalidation
+│   │   │   ├── check-auth                  # Session verification
+│   │   │   ├── delete_my_account           # Account & data purge
+│   │   │   ├── savetemporarycontent        # Create expiring link
+│   │   │   ├── gettemporarycontent         # Retrieve & burn expiring link
+│   │   │   ├── getusertemporarycontent     # List user's active expiring links
+│   │   │   ├── deleteusertemporarycontent  # Revoke an expiring link
+│   │   │   └── password/                   # Change & Mailjet reset handlers
+│   │   ├── account/                        # Account hub & deletion modal
+│   │   ├── securecontent/                  # Vault UI ("Feature to be built" placeholder)
+│   │   ├── temporarycontent/               # Ephemeral link generator & dashboard
+│   │   ├── securelinkview/[id]/            # Public recipient decryption view
+│   │   ├── passwordlost/                   # Forgot password request
+│   │   ├── passwordrenew/                  # Password renewal with reset token
+│   │   ├── passwordchange/                 # Authenticated password update
+│   │   ├── confidentiality-rules/          # Privacy policy page
+│   │   ├── general-conditions/             # Terms and conditions page
+│   │   ├── layout.tsx                      # Root HTML shell & providers
+│   │   ├── ClientLayout.tsx                # Client wrapper with Header/Navbar/Modals
+│   │   └── page.tsx                        # Home landing page with feature cards
+│   ├── components/                         # UI components
+│   │   ├── ui/                             # Buttons, inputs, alerts, cards
+│   │   ├── Header.tsx                      # Main top bar with auth status
+│   │   ├── Navbar.tsx                      # Mobile slide-out navigation
+│   │   ├── AuthModal.tsx                   # Unified Login/Register modal dialog
+│   │   ├── LoginForm.tsx                   # Credentials & Google login form
+│   │   ├── ConfirmationModal.tsx           # Destructive action confirmation dialog
+│   │   ├── ProtectedRoute.tsx              # Client-side route guard
+│   │   └── HomePageFeatures.tsx            # Feature grid presentation
+│   ├── context/                            # React Context providers
+│   │   ├── AuthContext.tsx                 # User auth state & session lifecycle
+│   │   └── AuthModalContext.tsx            # Modal visibility & mode switcher
+│   ├── lib/                                # Core utilities & backend connectors
+│   │   ├── db.ts                           # Cached MongoDB Mongoose connection
+│   │   ├── session.ts                      # AES-256-GCM cookie encryption & decryption
+│   │   ├── userDao.ts                      # Mongoose models and validation schemas
+│   │   ├── temporary_content_api.ts        # Client API for temporary link operations
+│   │   ├── api.ts                          # Client API for auth and account operations
+│   │   └── logger.ts                       # Winston logger setup
+│   └── styles/
+│       └── globals.css                     # Tailwind CSS base styles
+├── public/                                 # Favicons, logos, robots.txt, sitemaps
+├── next.config.js                          # Next.js configuration
+├── tailwind.config.ts                      # Tailwind & daisyUI theme configuration
+└── package.json
 ```
 
-The API route handlers replace the former standalone Express backend. Sessions are signed/encrypted cookies (no external session store needed), and MongoDB is connected lazily per request via `src/lib/db.ts`.
+---
 
-## Prerequisites
+## API Reference
 
-- Node.js 18+
-- npm
-- A MongoDB Atlas cluster
-- (optional) Google OAuth credentials
-- (optional) Mailjet API keys for password-reset emails
+All endpoints are hosted same-origin under `/api/*`:
 
-## Setup
+| Method | Endpoint | Auth Required | Description |
+|---|---|:---:|---|
+| `POST` | `/api/register` | No | Registers a new account (min 15 char password). |
+| `POST` | `/api/login` | No | Authenticates credentials and sets encrypted session cookie. |
+| `POST` | `/api/logout` | Yes | Clears session cookie. |
+| `POST` | `/api/check-auth` | No | Verifies if current session cookie is valid. |
+| `POST` | `/api/delete_my_account` | Yes | Permanently removes user account and created temporary links. |
+| `GET` | `/api/auth/google` | No | Redirects to Google OAuth 2.0 authorization page. |
+| `GET` | `/api/auth/callback/google` | No | Handles Google callback, logs in or auto-creates user, redirects to `/account`. |
+| `POST` | `/api/savetemporarycontent` | Yes | Creates an expiring secret link (`oneread` or `multipleread`). |
+| `GET` | `/api/gettemporarycontent` | No | Reads ephemeral content. Deletes if `oneread` or expired. |
+| `GET` | `/api/getusertemporarycontent` | Yes | Returns all active temporary links created by the authenticated user. |
+| `POST` | `/api/deleteusertemporarycontent`| Yes | Manually revokes and deletes a user's temporary link. |
+| `POST` | `/api/password/change` | Yes | Updates password for authenticated user. |
+| `POST` | `/api/password/reset/request` | No | Generates a 24h reset token and sends an email via Mailjet. |
+| `GET` | `/api/password/reset/verify` | No | Validates whether a reset token is valid and unexpired. |
+| `POST` | `/api/password/reset/reset` | No | Sets a new password using a verified reset token. |
 
-1. Clone the repository and install dependencies:
+---
 
-```bash
-git clone <repository-url>
-cd <project-name>
-npm install
-```
+## Environment Variables
 
-2. Create a `.env.local` file in the root directory (see `.env.example`):
+Create a `.env.local` file in the project root:
 
 ```env
-SESSION_COOKIE_KEY=your-secret-key
-SALT_SHA_256_HASHING=your-salt
+# Session & Cryptography
+SESSION_COOKIE_KEY=your_very_long_session_cookie_secret_key_here
+SALT_SHA_256_HASHING=your_salt_hash_string
+AES_TEMPORARY_CONTENT_DEFAULT_KEY=32_character_default_key_here!
+NODE_ENV=development
 
-MONGODB_ATLAS_USERNAME=...
-MONGODB_ATLAS_PASSWORD=...
-MONGODB_ATLAS_CLUSTER_URL=...
+# MongoDB Atlas
+MONGODB_ATLAS_USERNAME=your_mongodb_username
+MONGODB_ATLAS_PASSWORD=your_mongodb_password
+MONGODB_ATLAS_CLUSTER_URL=your_cluster.mongodb.net
 MONGODB_ATLAS_DB_NAME=PasswordKeeperDB
-MONGODB_ATLAS_APP_NAME=...
+MONGODB_ATLAS_APP_NAME=Cluster0
 
-MAILJET_API_KEY=...
-MAILJET_API_SECRET=...
-MAILJET_SENDER_EMAIL=...
+# Google OAuth 2.0 (Optional)
+GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+REDIRECT_URI=http://localhost:3000/api/auth/callback/google
 
+# Mailjet Email Service (Optional, for password reset)
+MAILJET_API_KEY=your_mailjet_api_key
+MAILJET_API_SECRET=your_mailjet_api_secret
+MAILJET_SENDER_EMAIL=contact@securaised.net
+
+# Application URLs & Metadata
 FRONTEND_URL=http://localhost:3000
-
 NEXT_PUBLIC_DOMAIN_URL=securaised.net
 NEXT_PUBLIC_BASE_URL=https://www.securaised.net/
-AES_TEMPORARY_CONTENT_DEFAULT_KEY=your-default-key
 ```
 
-3. Start the development server:
+---
 
-```bash
-npm run dev
-```
+## Getting Started
 
-Open [http://localhost:3000](http://localhost:3000).
+### Prerequisites
 
-## API Endpoints
+- **Node.js** 18+
+- **npm** or **yarn** / **pnpm**
+- **MongoDB Atlas** cluster or a local MongoDB instance
 
-All endpoints are same-origin under `/api/*` (Route Handlers in `src/app/api/`):
+### Installation & Run
 
-| Method | Endpoint | Auth | Purpose |
-|---|---|---|---|
-| POST | `/api/register` | – | Create an account |
-| POST | `/api/login` | – | Log in |
-| POST | `/api/logout` | ✓ | Log out |
-| POST | `/api/check-auth` | – | Check session status |
-| POST | `/api/delete_my_account` | ✓ | Delete account + all data |
-| GET | `/api/auth/google` | – | Start Google OAuth |
-| GET | `/api/auth/callback/google` | – | Google OAuth callback |
-| GET | `/api/getcontent` | ✓ | Get encrypted content for a file path |
-| POST | `/api/updatecontent` | ✓ | Save content for a file path |
-| POST | `/api/updatecontents` | ✓ | Batch-save multiple contents |
-| GET | `/api/getfiletree` | ✓ | Get the user's file tree |
-| POST | `/api/updatefiletree` | ✓ | Save the user's file tree |
-| POST | `/api/remove_file` | ✓ | Remove a file |
-| POST | `/api/remove_folder` | ✓ | Remove a folder |
-| POST | `/api/rename` | ✓ | Rename a file or folder |
-| POST | `/api/savetemporarycontent` | ✓ | Create a temporary shareable content |
-| GET | `/api/getusertemporarycontent` | ✓ | List the user's temporary links |
-| POST | `/api/deleteusertemporarycontent` | ✓ | Delete one of the user's links |
-| GET | `/api/gettemporarycontent` | – | Read temporary content (by identifier) |
-| POST | `/api/password/change` | ✓ | Change password |
-| POST | `/api/password/reset/request` | – | Request a password reset email |
-| GET | `/api/password/reset/verify` | – | Validate a reset token |
-| POST | `/api/password/reset/reset` | – | Set a new password with a token |
+1. Clone the repository and install dependencies:
+   ```bash
+   git clone <repository-url>
+   cd password-keeper-app
+   npm install
+   ```
 
-## Development
+2. Configure environment variables:
+   ```bash
+   cp .env.example .env.local
+   # Edit .env.local with your configuration
+   ```
 
-```bash
-npm run dev        # dev server on :3000
-npm run lint       # ESLint
-npm run build      # production build + typecheck
-npm run postbuild  # next-sitemap (runs automatically after build)
-```
+3. Start development server:
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+4. Useful Commands:
+   ```bash
+   npm run lint        # Run ESLint validation
+   npm run build       # Build production application & generate sitemap
+   npm run start       # Start production server
+   ```
+
+---
 
 ## Deployment (Vercel)
 
-The repo includes a `vercel.json` forcing Next.js detection:
+The application is pre-configured for seamless deployment to Vercel:
 
-```json
-{
-  "framework": "nextjs",
-  "buildCommand": "npm run build"
-}
-```
+1. Import the repository in [Vercel](https://vercel.com).
+2. Set the framework preset to **Next.js**.
+3. Configure all variables from `.env.local` into **Environment Variables** in Vercel.
+4. Set `serverExternalPackages: ['argon2', 'mongoose', 'node-mailjet', 'winston']` in `next.config.js` (already configured) to avoid bundling native binary dependencies.
+5. Deploy!
 
-Set all the env vars from `.env.example` as Vercel Environment Variables, and make sure the Framework Preset is **Next.js**. `serverExternalPackages` in `next.config.js` keeps the native Node packages (`argon2`, `mongoose`, `node-mailjet`, `winston`) external at build time.
-
-## Security
-
-- Client-side AES encryption: plaintext never leaves the browser
-- Argon2 password hashing
-- HTTP-only signed session cookies
-- Reset tokens stored in MongoDB with 24h expiry
-- Temporary content supports burn-after-read and optional password
+---
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](LICENSE).

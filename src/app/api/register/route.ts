@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import argon2 from 'argon2';
 import { v4 as uuidv4 } from 'uuid';
 import { connectToDatabase } from '@/lib/db';
-import { UsersModel, UserFileTreeModel, UserContentModel } from '@/lib/userDao';
+import { UsersModel } from '@/lib/userDao';
 import { setSessionCookie } from '@/lib/session';
 import { logger } from '@/lib/logger';
 
@@ -33,7 +33,6 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await hashPasswordArgon2(password);
     const createdAt = new Date();
     const userId = uuidv4();
-    const defaultFileUUID = uuidv4();
 
     await UsersModel.create({
       supabase_id: userId,
@@ -43,30 +42,6 @@ export async function POST(request: NextRequest) {
       password_version: 1,
       created_at: createdAt,
     });
-
-    await UserFileTreeModel.findOneAndUpdate(
-      { supabase_user_id: userId },
-      {
-        supabase_user_id: userId,
-        file_tree: '["default"]',
-        created_at: createdAt,
-        updated_at: createdAt,
-      },
-      { upsert: true, new: true }
-    );
-
-    await UserContentModel.findOneAndUpdate(
-      { supabase_user_id: userId, file_path: 'default' },
-      {
-        supabase_user_id: userId,
-        file_path: 'default',
-        file_uuid: defaultFileUUID,
-        encoded_content: '',
-        created_at: createdAt,
-        updated_at: createdAt,
-      },
-      { upsert: true, new: true }
-    );
 
     const response = NextResponse.json({ success: true });
     setSessionCookie(response, { id: userId, username });

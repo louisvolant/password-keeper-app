@@ -1,116 +1,54 @@
 // src/app/securecontent/page.tsx
 "use client";
-import { useState, useEffect, useCallback } from "react";
-import dynamic from 'next/dynamic';
-import { getContent, getFileTree } from "@/lib/secure_content_api";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+
+import Link from "next/link";
+import { Lock, Construction, ArrowLeft, Share2 } from "lucide-react";
 import ClientLayout from "../ClientLayout";
-import ProtectedRoute from '@/components/ProtectedRoute';
-import FileTree from "./FileTree";
-import { SecretKeyProvider } from '@/context/SecretKeyContext';
-import type { ContentEditorProps } from './ContentEditor';
-
-const ContentEditor = dynamic<ContentEditorProps>(
-  () => import('./ContentEditor').then((mod) => mod.ContentEditor),
-  { ssr: false }
-);
-
-function SecureContentInner() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [encodedContent, setEncodedContent] = useState<string | null>(null);
-  const [fileList, setFileList] = useState<{ file_name: string; uuid: string }[]>([]);
-  const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchFiles = async () => {
-      try {
-        const files = await getFileTree();
-        setFileList(files);
-        setSelectedFilePath(files[0]?.file_name || null);
-      } catch (err) {
-        console.error("Error fetching files:", err);
-        setError("Failed to load files");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchFiles();
-  }, []);
-
-  useEffect(() => {
-    if (selectedFilePath) {
-      fetchContent(selectedFilePath);
-    }
-  }, [selectedFilePath]);
-
-  const fetchContent = async (filePath: string) => {
-    try {
-      const content = await getContent(filePath);
-      setEncodedContent(content.encoded_content);
-    } catch (err) {
-      console.error("Error fetching content:", err);
-      setEncodedContent("");
-    }
-  };
-
-  const handleUpdateFiles = (newFiles: { file_name: string; uuid: string }[]) => {
-    setFileList(newFiles);
-  };
-
-  const handleContentSaved = useCallback((encodedContent: string) => {
-    setEncodedContent(encodedContent);
-  }, []);
-
-  if (isLoading) {
-    return (
-      <ClientLayout isLoading={isLoading}>
-        <div className="container mx-auto p-4">Loading...</div>
-      </ClientLayout>
-    );
-  }
-
-  return (
-    <ClientLayout isLoading={isLoading}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-        <div className="container mx-auto p-4">
-          {error ? (
-            <Alert>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          ) : (
-            <div className="lg:grid lg:grid-cols-[300px,1fr] lg:gap-6">
-              <div className="mb-4 max-w-2xl lg:mb-0">
-                {fileList.length > 0 && (
-                  <FileTree
-                    files={fileList}
-                    selectedFile={selectedFilePath}
-                    onSelectFile={setSelectedFilePath}
-                    onUpdateFiles={handleUpdateFiles}
-                  />
-                )}
-              </div>
-              <div className="max-w-2xl">
-                <ContentEditor
-                  filePath={selectedFilePath || ""}
-                  initialContent={encodedContent || ""}
-                  onContentSaved={handleContentSaved}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    </ClientLayout>
-  );
-}
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { Button } from "@/components/ui/button";
 
 export default function SecureContentPage() {
   return (
     <ProtectedRoute>
-      <SecretKeyProvider>
-        <SecureContentInner />
-      </SecretKeyProvider>
+      <ClientLayout isLoading={false}>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors flex items-center justify-center p-4">
+          <div className="max-w-lg w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700 text-center">
+            {/* Header Icon */}
+            <div className="mx-auto w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400 mb-6 shadow-inner">
+              <Construction className="w-8 h-8" />
+            </div>
+
+            {/* Badge */}
+            <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 mb-3">
+              Feature to be built
+            </span>
+
+            {/* Title & Description */}
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+              Zero-Knowledge Personal Vault
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300 text-sm leading-relaxed mb-8">
+              The encrypted file vault and hierarchical note editor is currently scheduled for development. In the meantime, you can securely share expiring, encrypted notes via temporary links.
+            </p>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href="/temporarycontent" className="w-full sm:w-auto">
+                <Button className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+                  <Share2 className="w-4 h-4" />
+                  <span>Create Temporary Link</span>
+                </Button>
+              </Link>
+              <Link href="/" className="w-full sm:w-auto">
+                <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Back to Home</span>
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </ClientLayout>
     </ProtectedRoute>
   );
 }
