@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "postbuild": "next-sitemap",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "prebuild": "npm run keeweb:setup",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "keeweb:setup": "bash scripts/fetch-keeweb.sh",
     "upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",

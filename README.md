@@ -210,9 +210,9 @@ The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
 │       └── globals.css                     # Tailwind CSS base styles
 ├── public/                                 # Favicons, logos, robots.txt, sitemaps
 │   ├── keeweb-config.json                  # KeeWeb runtime config (managed WebDAV connector)
-│   └── keeweb/                             # KeeWeb static SPA (git-ignored, via npm run keeweb:setup)
+│   └── keeweb/                             # KeeWeb static SPA (git-ignored, vendored by the prebuild hook)
 ├── scripts/
-│   └── fetch-keeweb.sh                     # Downloads the KeeWeb web app from GitHub releases
+│   └── fetch-keeweb.sh                     # Downloads the KeeWeb web app from GitHub releases (idempotent)
 ├── open-next.config.ts                     # OpenNext Cloudflare adapter configuration
 ├── wrangler.jsonc                          # Cloudflare Workers configuration (keep_vars=true)
 ├── next.config.js                          # Next.js configuration
@@ -281,9 +281,10 @@ MAILJET_SENDER_EMAIL=contact@securaised.net
 
 > **Vault storage (Cloudflare R2):** no env var is needed. Create the bucket once
 > (`npx wrangler r2 bucket create password-keeper-vaults`, see the `r2_buckets`
-> binding in `wrangler.jsonc`) and vendor the KeeWeb client with
-> `npm run keeweb:setup` (downloads the official static SPA into the
-> git-ignored `public/keeweb/` directory). Local dev emulates R2 automatically.
+> binding in `wrangler.jsonc`). The KeeWeb client is vendored automatically by
+> the `prebuild` hook (`scripts/fetch-keeweb.sh`, idempotent) into the
+> git-ignored `public/keeweb/` directory on every `npm run build`, including CI.
+> Local dev emulates R2 automatically.
 
 ---
 

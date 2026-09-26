@@ -37,12 +37,27 @@ export default function SecureContentPage() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const fetchStatus = useCallback(async () => {
+    setError(null);
     try {
       const res = await fetch('/api/vault/status', { cache: 'no-store' });
-      const data = (await res.json()) as VaultStatus;
+      let data: VaultStatus | null = null;
+      try {
+        data = (await res.json()) as VaultStatus;
+      } catch {
+        // Non-JSON response (gateway or worker crash page).
+      }
+      if (!res.ok || !data) {
+        setStatus(null);
+        setError(data?.error || `Vault service error (HTTP ${res.status}).`);
+        return;
+      }
       setStatus(data);
+      if (!data.success) {
+        setError(data.error || 'Vault service returned an error.');
+      }
     } catch (err) {
       console.error(err);
+      setStatus(null);
       setError('Unable to reach the vault service.');
     } finally {
       setIsLoading(false);
