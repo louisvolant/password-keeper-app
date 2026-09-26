@@ -1,6 +1,6 @@
 # Securaised (Password Keeper)
 
-A secure, zero-knowledge web application for managing encrypted personal vaults (notes, secrets, and credentials) and sharing self-destructing ("burn after read") temporary content. Built as a unified full-stack application using **Next.js (App Router)**, **React 19**, **TypeScript**, and **MongoDB**.
+A secure web application for sharing self-destructing ("burn after read") temporary content and encrypted credentials, featuring user authentication, session security, and account management. Built with **Next.js (App Router)**, **React 19**, **TypeScript**, and **MongoDB**, deployed globally on **Cloudflare Workers** using **OpenNext**.
 
 ---
 
@@ -19,7 +19,7 @@ A secure, zero-knowledge web application for managing encrypted personal vaults 
 - [API Reference](#api-reference)
 - [Environment Variables](#environment-variables)
 - [Getting Started](#getting-started)
-- [Deployment (Vercel)](#deployment-vercel)
+- [Deployment (Cloudflare Workers)](#deployment-cloudflare-workers)
 - [License](#license)
 
 ---
@@ -128,20 +128,19 @@ The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
    - `token`: 64-character hex reset token.
    - `expires_at`: 24-hour expiration timestamp.
    - `created_at`: Creation timestamp.
-   - `expires_at`: 24-hour expiration timestamp.
-   - `created_at`: Creation timestamp.
 
 ---
 
 ## Tech Stack
 
 - **Framework:** [Next.js](https://nextjs.org/) (App Router, Route Handlers)
+- **Deployment Platform:** [Cloudflare Workers](https://workers.cloudflare.com/) via [@opennextjs/cloudflare](https://opennext.js.org/cloudflare)
+- **Configuration & CLI:** [Wrangler](https://developers.cloudflare.com/workers/wrangler/) (with `keep_vars = true`)
 - **Frontend Library:** [React 19](https://react.dev/)
 - **Language:** [TypeScript](https://www.typescriptlang.org/)
 - **Database & ODM:** [MongoDB Atlas](https://www.mongodb.com/atlas) with [Mongoose](https://mongoosejs.com/)
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/) & [daisyUI](https://daisyui.com/)
-- **Cryptography & Auth:** `argon2`, `crypto-js`, native Node.js `crypto`
-- **Rich Text & Parsing:** `react-quill-new`, `turndown`, `marked`, `sanitize-html`
+- **Cryptography & Auth:** `argon2` (Argon2id), native Node.js `crypto`
 - **Email Service:** `node-mailjet` (Mailjet v3.1 API)
 - **HTTP Client:** `axios`
 - **Icons:** `lucide-react`
@@ -202,6 +201,8 @@ The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
 │   └── styles/
 │       └── globals.css                     # Tailwind CSS base styles
 ├── public/                                 # Favicons, logos, robots.txt, sitemaps
+├── open-next.config.ts                     # OpenNext Cloudflare adapter configuration
+├── wrangler.jsonc                          # Cloudflare Workers configuration (keep_vars=true)
 ├── next.config.js                          # Next.js configuration
 ├── tailwind.config.ts                      # Tailwind & daisyUI theme configuration
 └── package.json
@@ -301,21 +302,37 @@ NEXT_PUBLIC_BASE_URL=https://www.securaised.net/
 4. Useful Commands:
    ```bash
    npm run lint        # Run ESLint validation
-   npm run build       # Build production application & generate sitemap
-   npm run start       # Start production server
+   npm run build:next  # Next.js production build & typecheck
+   npm run build       # Build OpenNext Cloudflare bundle (.open-next/)
+   npm run preview     # Preview Cloudflare Worker locally via Wrangler
+   npm run deploy      # Build and deploy directly to Cloudflare Workers
    ```
 
 ---
 
-## Deployment (Vercel)
+## Deployment (Cloudflare Workers)
 
-The application is pre-configured for seamless deployment to Vercel:
+The application is deployed to **Cloudflare Workers** using [@opennextjs/cloudflare](https://opennext.js.org/cloudflare):
 
-1. Import the repository in [Vercel](https://vercel.com).
-2. Set the framework preset to **Next.js**.
-3. Configure all variables from `.env.local` into **Environment Variables** in Vercel.
-4. Set `serverExternalPackages: ['argon2', 'mongoose', 'node-mailjet', 'winston']` in `next.config.js` (already configured) to avoid bundling native binary dependencies.
-5. Deploy!
+1. **Wrangler Configuration (`wrangler.jsonc`):**
+   - Configured with `main = ".open-next/worker.js"`.
+   - `compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]`.
+   - `keep_vars = true` is explicitly configured to ensure environment variables set in the Cloudflare dashboard are preserved across automated and CLI deployments.
+   - Assets are served using the `ASSETS` binding pointing to `.open-next/assets`.
+
+2. **Environment Variables on Cloudflare:**
+   - Add your production variables (from `.env.example`) via the Cloudflare Dashboard (**Workers & Pages** > `password-keeper-app` > **Settings** > **Variables and Secrets**) or via Wrangler:
+     ```bash
+     npx wrangler secret put SESSION_COOKIE_KEY
+     npx wrangler secret put MONGODB_ATLAS_PASSWORD
+     # Repeat for all required secrets
+     ```
+
+3. **Deploy:**
+   ```bash
+   npm run deploy
+   ```
+   This compiles the Next.js app, packages it with OpenNext for Cloudflare Workers, and uploads the worker and static assets with `keep_vars = true`.
 
 ---
 

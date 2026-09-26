@@ -54,3 +54,7 @@ node_modules/
 dist/
 build/
 .cache/
+
+# Cloudflare & OpenNext
+.open-next/
+.wrangler/
