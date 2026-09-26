@@ -58,3 +58,9 @@ build/
 # Cloudflare & OpenNext
 .open-next/
 .wrangler/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

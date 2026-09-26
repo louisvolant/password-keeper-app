@@ -295,14 +295,39 @@ MAILJET_SENDER_EMAIL=contact@securaised.net
 
 4. Useful Commands:
    ```bash
-   npm run lint        # Run ESLint validation
-   npm run build:next  # Next.js production build & typecheck
-   npm run build       # Build OpenNext Cloudflare bundle (.open-next/)
-   npm run preview     # Preview Cloudflare Worker locally via Wrangler
-   npm run deploy      # Build and deploy directly to Cloudflare Workers
+   npm run lint          # Run ESLint validation
+   npm run test:e2e      # Run Playwright E2E test suite (register, login, secret links, logout)
+   npm run test:e2e:ui   # Run Playwright with interactive UI mode
+   npm run build:next    # Next.js production build & typecheck
+   npm run build         # Build OpenNext Cloudflare bundle (.open-next/)
+   npm run preview       # Preview Cloudflare Worker locally via Wrangler
+   npm run deploy        # Build and deploy directly to Cloudflare Workers
    ```
 
 ---
+
+## End-to-End Testing (Playwright)
+
+The project includes an automated end-to-end test suite using [Playwright](https://playwright.dev/) located in [`e2e/`](file:///Users/louis/javascriptworkspace/password-keeper-app/e2e):
+
+The test suite covers the complete user lifecycle:
+1. **User Registration:** Fills form, registers account, and validates redirect to `/account`.
+2. **User Logout:** Clears authenticated session and validates redirect / guest state.
+3. **User Login:** Authenticates using created credentials and verifies session cookie.
+4. **Create Ephemeral Link:** Stores encrypted temporary content and verifies generated share link.
+5. **Decrypt & Read Secret:** Opens the secret URL in a separate browser context and verifies decrypted payload.
+6. **Delete Ephemeral Link:** Deletes the temporary secret and confirms removal from the user link list.
+7. **Final Logout:** Ensures user is completely logged out and protected routes are inaccessible.
+
+Run the test suite locally (automatically launches local dev server):
+```bash
+npm run test:e2e
+```
+
+To run against a specific deployment (e.g., Cloudflare Workers):
+```bash
+PLAYWRIGHT_TEST_BASE_URL=https://password-keeper-app.volantlouis.workers.dev npm run test:e2e
+```
 
 ## Deployment (Cloudflare Workers)
 
