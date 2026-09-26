@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       { upsert: true, new: true }
     );
 
-    const baseUrl = process.env.FRONTEND_URL || request.nextUrl.origin;
+    const baseUrl = request.nextUrl.origin;
     const resetUrl = `${baseUrl}/passwordrenew?token=${token}`;
 
     if (process.env.MAILJET_API_KEY && process.env.MAILJET_API_SECRET) {

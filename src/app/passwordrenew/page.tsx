@@ -4,7 +4,7 @@ import ClientLayout from "../ClientLayout";
 import PasswordRenewForm from "./PasswordRenewForm";
 
 export const metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"),
+  metadataBase: new URL("https://www.securaised.net/"),
   title: "Reset Password",
   description: "Reset your account password",
 };

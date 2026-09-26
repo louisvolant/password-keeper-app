@@ -239,33 +239,31 @@ All endpoints are hosted same-origin under `/api/*`:
 Create a `.env.local` file in the project root:
 
 ```env
-# Session & Cryptography
-SESSION_COOKIE_KEY=your_very_long_session_cookie_secret_key_here
-SALT_SHA_256_HASHING=your_salt_hash_string
-AES_TEMPORARY_CONTENT_DEFAULT_KEY=32_character_default_key_here!
-NODE_ENV=development
+# Session Security (Required)
+SESSION_COOKIE_KEY=your_session_cookie_secret_key_here
 
-# MongoDB Atlas
+# MongoDB Atlas Database Connection (Required)
 MONGODB_ATLAS_USERNAME=your_mongodb_username
 MONGODB_ATLAS_PASSWORD=your_mongodb_password
-MONGODB_ATLAS_CLUSTER_URL=your_cluster.mongodb.net
+MONGODB_ATLAS_CLUSTER_URL=your_cluster_url.mongodb.net
 MONGODB_ATLAS_DB_NAME=PasswordKeeperDB
 MONGODB_ATLAS_APP_NAME=Cluster0
+
+# Ephemeral Link Encryption (Recommended: 32-character string for AES-256)
+AES_TEMPORARY_CONTENT_DEFAULT_KEY=your_32_character_default_key!
 
 # Google OAuth 2.0 (Optional)
 GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your_google_client_secret
-REDIRECT_URI=http://localhost:3000/api/auth/callback/google
+REDIRECT_URI=https://www.securaised.net/api/auth/callback/google
 
-# Mailjet Email Service (Optional, for password reset)
+# Mailjet Email Service for Password Reset (Optional)
 MAILJET_API_KEY=your_mailjet_api_key
 MAILJET_API_SECRET=your_mailjet_api_secret
 MAILJET_SENDER_EMAIL=contact@securaised.net
 
-# Application URLs & Metadata
-FRONTEND_URL=http://localhost:3000
-NEXT_PUBLIC_DOMAIN_URL=securaised.net
-NEXT_PUBLIC_BASE_URL=https://www.securaised.net/
+# Legacy Password Hashing Salt (Optional, for backward compatibility)
+SALT_SHA_256_HASHING=your_salt_hash
 ```
 
 ---

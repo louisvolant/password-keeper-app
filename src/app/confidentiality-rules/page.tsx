@@ -2,10 +2,8 @@
 'use client';
 import ClientLayout from '@/app/ClientLayout';
 
-const domain = process.env.NEXT_PUBLIC_DOMAIN_URL;
-
 export default function ConfidentialityRulesPage() {
-  const contactEmail = `contact [at] ${domain}`; // Construct the email
+  const contactEmail = 'contact [at] securaised.net';
 
   return (
     <ClientLayout isLoading={false}>

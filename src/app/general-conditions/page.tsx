@@ -2,10 +2,8 @@
 'use client';
 import ClientLayout from '@/app/ClientLayout';
 
-const domain = process.env.NEXT_PUBLIC_DOMAIN_URL;
-
 export default function GeneralConditionsPage() {
-  const contactEmail = `contact [at] ${domain}`;
+  const contactEmail = 'contact [at] securaised.net';
 
   return (
     <ClientLayout isLoading={false}>
