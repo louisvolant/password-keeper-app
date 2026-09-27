@@ -9,6 +9,7 @@
   ],
   "showOnlyFilesFromConfig": true,
   "settings": {
+    "allowIframes": true,
     "webdav": true,
     "webdavSaveMethod": "put",
     "dropbox": false,
