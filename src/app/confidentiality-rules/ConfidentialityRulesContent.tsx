@@ -1,0 +1,31 @@
+// src/app/confidentiality-rules/ConfidentialityRulesContent.tsx
+// Client-side body of the confidentiality rules page. page.tsx owns SEO metadata.
+'use client';
+import ClientLayout from '@/app/ClientLayout';
+
+export default function ConfidentialityRulesContent() {
+  const contactEmail = 'contact [at] securaised.net';
+
+  return (
+    <ClientLayout isLoading={false}>
+      <div className="container mx-auto p-4 max-w-2xl">
+        <h1 className="text-3xl font-bold mb-4">Confidentiality Rules</h1>
+
+        <p className="mb-4">
+          We are committed to protecting your privacy. This page outlines our
+          confidentiality rules and how we handle your data.
+        </p>
+
+        <ul className="list-disc pl-6 mb-4">
+          <li>We do not share your personal information with third parties without your consent.</li>
+          <li>Your data is encrypted and stored securely.</li>
+          <li>We use your data only for the purpose of providing and improving our services.</li>
+        </ul>
+
+        <p className="mb-4">
+          For more information, please contact us at {contactEmail}.
+        </p>
+      </div>
+    </ClientLayout>
+  );
+}

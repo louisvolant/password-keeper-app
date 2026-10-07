@@ -86,7 +86,7 @@ A secure web application for sharing self-destructing ("burn after read") tempor
 - **Responsive Layout:** Adaptive desktop navigation bar and mobile drawer sidebar (`Navbar.tsx` and `Header.tsx`).
 - **Modal System:** Context-driven modal architecture (`AuthModalContext`) supporting seamless switching between Login and Registration dialogs without page reloads.
 - **External Network Hub:** Curated directory of companion tools and projects integrated into navigation and footer.
-- **Performance & SEO:** Pre-configured `@vercel/speed-insights`, automated `next-sitemap` generation on build, OpenGraph social cards, and mobile-friendly touch targets.
+- **Performance & SEO:** Pre-configured `@vercel/speed-insights`, per-page canonical URLs and `noindex` directives on private pages (App Router `metadata` exports), OpenGraph social cards, and mobile-friendly touch targets.
 
 ---
 

@@ -1,30 +1,17 @@
 // src/app/confidentiality-rules/page.tsx
-'use client';
-import ClientLayout from '@/app/ClientLayout';
+// Server entry owning SEO metadata; the visible page body is client-rendered.
+import type { Metadata } from "next";
+import ConfidentialityRulesContent from "./ConfidentialityRulesContent";
+
+export const metadata: Metadata = {
+  title: "Confidentiality Rules",
+  description:
+    "How Securaised handles your data: encryption, storage and privacy rules.",
+  alternates: {
+    canonical: "/confidentiality-rules",
+  },
+};
 
 export default function ConfidentialityRulesPage() {
-  const contactEmail = 'contact [at] securaised.net';
-
-  return (
-    <ClientLayout isLoading={false}>
-      <div className="container mx-auto p-4 max-w-2xl">
-        <h1 className="text-3xl font-bold mb-4">Confidentiality Rules</h1>
-
-        <p className="mb-4">
-          We are committed to protecting your privacy. This page outlines our
-          confidentiality rules and how we handle your data.
-        </p>
-
-        <ul className="list-disc pl-6 mb-4">
-          <li>We do not share your personal information with third parties without your consent.</li>
-          <li>Your data is encrypted and stored securely.</li>
-          <li>We use your data only for the purpose of providing and improving our services.</li>
-        </ul>
-
-        <p className="mb-4">
-          For more information, please contact us at {contactEmail}.
-        </p>
-      </div>
-    </ClientLayout>
-  );
+  return <ConfidentialityRulesContent />;
 }

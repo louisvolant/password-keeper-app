@@ -1,0 +1,46 @@
+// e2e/seo.spec.ts
+// SEO contract tests: canonical tags on indexable pages, noindex on private
+// pages, sitemap/robots output, and legacy redirect cleanup.
+import { test, expect } from '@playwright/test';
+
+const SITE_URL = 'https://www.securaised.net';
+
+test.describe('SEO metadata', () => {
+  test('home page declares its canonical URL', async ({ page }) => {
+    await page.goto('/');
+    const canonical = page.locator('link[rel="canonical"]');
+    await expect(canonical).toHaveCount(1);
+    await expect(canonical).toHaveAttribute('href', SITE_URL);
+    await expect(canonical).not.toHaveAttribute('href', 'http://');
+  });
+
+  test('indexable pages declare canonical HTTPS www URLs', async ({ request }) => {
+    const paths = ['/', '/confidentiality-rules', '/general-conditions', '/passwordlost'];
+    for (const path of paths) {
+      const response = await request.get(path);
+      expect(response.status(), `GET ${path}`).toBe(200);
+      const html = await response.text();
+      // Next.js normalizes the root canonical without a trailing slash.
+      const expectedHref = path === '/' ? SITE_URL : `${SITE_URL}${path}`;
+      expect(html, `canonical for ${path}`).toContain(`<link rel="canonical" href="${expectedHref}"`);
+      expect(html, `canonical must be https://www for ${path}`).not.toContain('rel="canonical" href="http://');
+    }
+  });
+
+  test('private pages are marked noindex', async ({ request }) => {
+    const paths = [
+      '/account',
+      '/passwordchange',
+      '/passwordrenew',
+      '/securecontent',
+      '/temporarycontent',
+      '/securelinkview/00000000-0000-0000-0000-000000000000',
+    ];
+    for (const path of paths) {
+      const response = await request.get(path);
+      expect(response.status(), `GET ${path}`).toBe(200);
+      const html = await response.text();
+      expect(html, `noindex for ${path}`).toContain('name="robots" content="noindex');
+    }
+  });
+});

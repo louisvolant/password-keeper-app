@@ -1,12 +1,14 @@
 // src/app/passwordrenew/page.tsx
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import ClientLayout from "../ClientLayout";
 import PasswordRenewForm from "./PasswordRenewForm";
 
-export const metadata = {
-  metadataBase: new URL("https://www.securaised.net/"),
+// Private reset flow: must never appear in search results.
+export const metadata: Metadata = {
   title: "Reset Password",
   description: "Reset your account password",
+  robots: { index: false, follow: false },
 };
 
 export default function PasswordRenewPage() {

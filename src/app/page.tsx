@@ -1,29 +1,18 @@
 // src/app/page.tsx
-'use client';
+// Server entry for the home page. Owns SEO metadata so crawlers always get a
+// canonical URL (fixes "Duplicate without user-selected canonical" in Search Console).
+import type { Metadata } from "next";
+import HomeContent from "./HomeContent";
 
-import { useAuth } from '@/context/AuthContext';
-import ClientLayout from '@/app/ClientLayout';
-import { HomePageFeatures } from '@/components/HomePageFeatures';
+export const metadata: Metadata = {
+  title: "Securaised - Secure Password Keeper & Secret Sharing",
+  description:
+    "Store passwords in an AES-256 encrypted vault and share self-destructing secret links. Zero-knowledge, encrypted client-side.",
+  alternates: {
+    canonical: "/",
+  },
+};
 
-export default function Home() {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  return (
-    <ClientLayout isLoading={isLoading}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="container mx-auto px-4 py-12">
-          <section className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-              Secure Your Digital Life
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              Store, share, and manage sensitive data with advanced encryption technology.
-            </p>
-          </section>
-
-          <HomePageFeatures isAuthenticated={isAuthenticated} />
-        </div>
-      </div>
-    </ClientLayout>
-  );
+export default function HomePage() {
+  return <HomeContent />;
 }
