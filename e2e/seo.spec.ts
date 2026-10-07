@@ -70,3 +70,31 @@ test.describe('SEO sitemap & robots', () => {
     }
   });
 });
+
+test.describe('SEO redirects', () => {
+  test('legacy removed pages permanently redirect to home', async ({ request }) => {
+    for (const path of ['/access-audit', '/version-history']) {
+      const response = await request.get(path, { maxRedirects: 0 });
+      expect(response.status(), `redirect for ${path}`).toBe(308);
+      expect(response.headers()['location'], `redirect target for ${path}`).toBe('/');
+    }
+  });
+
+  test('apex host permanently redirects to the www canonical host', async ({ request }) => {
+    // Simulate a request arriving on the apex (non-www) host, as Googlebot does.
+    const response = await request.get('/confidentiality-rules', {
+      headers: { host: 'securaised.net' },
+      maxRedirects: 0,
+    });
+    expect(response.status()).toBe(308);
+    expect(response.headers()['location']).toBe(`${SITE_URL}/confidentiality-rules`);
+  });
+
+  test('www host does not redirect', async ({ request }) => {
+    const response = await request.get('/confidentiality-rules', {
+      headers: { host: 'www.securaised.net' },
+      maxRedirects: 0,
+    });
+    expect(response.status()).toBe(200);
+  });
+});

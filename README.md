@@ -355,6 +355,9 @@ To run against a specific deployment (e.g., Cloudflare Workers):
 PLAYWRIGHT_TEST_BASE_URL=https://password-keeper-app.volantlouis.workers.dev npm run test:e2e
 ```
 
+A dedicated SEO suite (`e2e/seo.spec.ts`) verifies the Search Console hygiene:
+canonical URLs on indexable pages, `noindex` on private pages, generated `sitemap.xml`/`robots.txt` content, and 308 redirects for removed pages and the apex (non-www) host.
+
 ## Deployment (Cloudflare Workers)
 
 The application is deployed to **Cloudflare Workers** using [@opennextjs/cloudflare](https://opennext.js.org/cloudflare):
@@ -378,6 +381,11 @@ The application is deployed to **Cloudflare Workers** using [@opennextjs/cloudfl
    npm run deploy
    ```
    This compiles the Next.js app, packages it with OpenNext for Cloudflare Workers, and uploads the worker and static assets with `keep_vars = true`.
+
+4. **Domain & SEO settings on Cloudflare (recommended):**
+   - The app already enforces `https://www.securaised.net` as the canonical host via Next.js redirects and per-page canonical tags.
+   - In the Cloudflare dashboard, enable **SSL/TLS > Edge Certificates > Always Use HTTPS** so plain `http://` requests never reach the worker (Search Console "Page with redirect" status for http URLs is expected and safe).
+   - Run the Search Console **"Validate fix"** actions for the reported issues after deploying; canonical signals take a few days/weeks to settle.
 
 ---
 
