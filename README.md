@@ -149,7 +149,7 @@ The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
 - **Email Service:** `node-mailjet` (Mailjet v3.1 API)
 - **HTTP Client:** `axios`
 - **Icons:** `lucide-react`
-- **Analytics & SEO:** `@vercel/speed-insights`, `next-sitemap`
+- **Analytics & SEO:** `@vercel/speed-insights`, native App Router metadata routes (`sitemap.ts`, `robots.ts`) and per-page canonical/noindex metadata
 
 ---
 
@@ -184,6 +184,8 @@ The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
 │   │   ├── confidentiality-rules/          # Privacy policy page
 │   │   ├── general-conditions/             # Terms and conditions page
 │   │   ├── layout.tsx                      # Root HTML shell & providers
+│   │   ├── sitemap.ts                      # Generated sitemap.xml (indexable pages only)
+│   │   ├── robots.ts                       # Generated robots.txt (blocks private areas)
 │   │   ├── ClientLayout.tsx                # Client wrapper with Header/Navbar/Modals
 │   │   └── page.tsx                        # Home landing page with feature cards
 │   ├── components/                         # UI components
@@ -208,7 +210,7 @@ The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
 │   │   └── logger.ts                       # Winston logger setup
 │   └── styles/
 │       └── globals.css                     # Tailwind CSS base styles
-├── public/                                 # Favicons, logos, robots.txt, sitemaps
+├── public/                                 # Favicons, logos, vendored static assets
 │   ├── keeweb-config.json                  # KeeWeb runtime config (managed WebDAV connector)
 │   └── keeweb/                             # KeeWeb static SPA (git-ignored, vendored by the prebuild hook)
 ├── scripts/
