@@ -269,7 +269,7 @@ export default function TemporaryLinkContent() {
                                 href={`${window.location.origin}/securelinkview/${link.identifier}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="link link-primary"
+                                className="link link-primary break-all"
                               >
                                 {`${window.location.origin}/securelinkview/${link.identifier}`}
                               </a>

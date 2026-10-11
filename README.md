@@ -355,8 +355,18 @@ To run against a specific deployment (e.g., Cloudflare Workers):
 PLAYWRIGHT_TEST_BASE_URL=https://password-keeper-app.volantlouis.workers.dev npm run test:e2e
 ```
 
-A dedicated SEO suite (`e2e/seo.spec.ts`) verifies the Search Console hygiene:
-canonical URLs on indexable pages, `noindex` on private pages, generated `sitemap.xml`/`robots.txt` content, and 308 redirects for removed pages and the apex (non-www) host.
+A dedicated SEO suite (`e2e/seo.spec.ts`) verifies Search Console hygiene (canonical URLs, `noindex`, sitemap, robots, redirects).
+A dedicated PWA suite (`e2e/pwa.spec.ts`) validates Web App Manifest metadata, iOS icons, service worker accessibility, and verifies zero horizontal overflow on mobile viewports.
+
+## Progressive Web App (PWA)
+
+Securaised is configured as an installable Progressive Web App (PWA) for iOS, Android, and Desktop:
+
+- **Web App Manifest:** Generated via native Next.js [`src/app/manifest.ts`](src/app/manifest.ts) (`/manifest.webmanifest`) with standalone display, dark theme color (`#111827`), and portrait-primary orientation.
+- **iOS & Safari Support:** Provides high-resolution [`public/apple-touch-icon.png`](public/apple-touch-icon.png) (180x180), `apple-mobile-web-app-capable` meta tags, and `viewport-fit=cover` for notch and Dynamic Island safe-area insets.
+- **App Icons:** High-resolution multi-size [`favicon.ico`](public/favicon.ico) (16x16, 32x32, 48x48), standard icons (`icon-192.png`, `icon-512.png`), and adaptive maskable icons (`icon-maskable-192.png`, `icon-maskable-512.png`).
+- **Service Worker:** [`public/sw.js`](public/sw.js) provides asset pre-caching and stale-while-revalidate caching for static assets, with strict exclusion of sensitive `/api/*` requests to protect credentials and vault data.
+- **Responsive Mobile Layout:** Strictly prevents horizontal overflow on mobile viewports via `overflow-x: hidden`, `overscroll-behavior-x: none`, and CSS safe-area padding (`safe-top`, `safe-bottom`).
 
 ## Deployment (Cloudflare Workers)
 

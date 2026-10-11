@@ -18,25 +18,25 @@ export const Header = ({ isLoading }: HeaderProps) => {
   const { openLoginModal, openRegisterModal } = useAuthModal();
 
   return (
-    <header className="bg-blue-600 dark:bg-blue-800 text-white py-4">
+    <header className="bg-blue-600 dark:bg-blue-800 text-white py-4 safe-top max-w-full">
       <div className="container mx-auto px-4 flex items-center justify-between max-w-screen-xl">
         {/* Left Section: Logo */}
-        <div className="flex items-center">
-          <Link href="/" className="flex items-center">
+        <div className="flex items-center min-w-0 mr-2">
+          <Link href="/" className="flex items-center min-w-0">
             <Image
               src="/icon_shield.png"
               alt="Shield Tool Logo"
               width={32}
               height={32}
               priority
-              className="h-8 w-8 mr-2"
+              className="h-8 w-8 mr-2 shrink-0"
             />
-            <h1 className="text-2xl font-bold">Password Keeper</h1>
+            <h1 className="text-xl sm:text-2xl font-bold truncate">Password Keeper</h1>
           </Link>
         </div>
 
         {/* Right Section: Links and Buttons */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 sm:space-x-4 shrink-0">
           <nav className="hidden md:flex space-x-4">
             <Link href="/confidentiality-rules" className="hover:text-gray-200 text-lg">
               Confidentiality Rules
