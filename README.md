@@ -383,7 +383,7 @@ The application is deployed to **Cloudflare Workers** using [@opennextjs/cloudfl
    This compiles the Next.js app, packages it with OpenNext for Cloudflare Workers, and uploads the worker and static assets with `keep_vars = true`.
 
 4. **Domain & SEO settings on Cloudflare (recommended):**
-   - The app already enforces `https://www.securaised.net` as the canonical host via Next.js redirects and per-page canonical tags.
+   - The app enforces `https://www.securaised.net` as canonical via per-page `<link rel="canonical">` tags and `metadataBase`. Apex-to-www redirection (`securaised.net` -> `https://www.securaised.net`) is configured at the Cloudflare Edge via **Rules > Redirect Rules** (avoid Next.js host-based redirect rules with OpenNext on Cloudflare to prevent middleware regex matching loops).
    - In the Cloudflare dashboard, enable **SSL/TLS > Edge Certificates > Always Use HTTPS** so plain `http://` requests never reach the worker (Search Console "Page with redirect" status for http URLs is expected and safe).
    - Run the Search Console **"Validate fix"** actions for the reported issues after deploying; canonical signals take a few days/weeks to settle.
 

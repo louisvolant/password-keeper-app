@@ -7,14 +7,6 @@ const nextConfig = {
     // Legacy "coming soon" feature pages that never shipped (Search Console 404s).
     { source: '/access-audit', destination: '/', permanent: true },
     { source: '/version-history', destination: '/', permanent: true },
-    // Canonical host: apex must redirect to the www domain used in
-    // metadataBase, sitemap.xml and robots.txt.
-    {
-      source: '/:path*',
-      has: [{ type: 'host', value: 'securaised.net' }],
-      destination: 'https://www.securaised.net/:path*',
-      permanent: true,
-    },
   ],
 };
 
