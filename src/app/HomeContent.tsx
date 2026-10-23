@@ -2,12 +2,19 @@
 // Client-side body of the home page. The server page (page.tsx) owns SEO metadata.
 'use client';
 
+import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import ClientLayout from '@/app/ClientLayout';
 import { HomePageFeatures } from '@/components/HomePageFeatures';
 
 export default function HomeContent() {
   const { isAuthenticated, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('cache_cleared')) {
+      window.history.replaceState({}, '', '/');
+    }
+  }, []);
 
   return (
     <ClientLayout isLoading={isLoading}>

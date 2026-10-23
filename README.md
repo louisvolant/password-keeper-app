@@ -12,6 +12,7 @@ A secure web application for sharing self-destructing ("burn after read") tempor
   - [2. Ephemeral Secret Sharing (Burn-After-Read)](#2-ephemeral-secret-sharing-burn-after-read)
   - [3. Authentication & Account Management](#3-authentication--account-management)
   - [4. UI/UX & Responsive Experience](#4-uiux--responsive-experience)
+  - [5. Stale Redirect Recovery (`/:path*`)](#5-stale-redirect-recovery-path)
 - [Security Architecture & Cryptography](#security-architecture--cryptography)
 - [Database Schema (MongoDB)](#database-schema-mongodb)
 - [Tech Stack](#tech-stack)
@@ -87,6 +88,12 @@ A secure web application for sharing self-destructing ("burn after read") tempor
 - **Modal System:** Context-driven modal architecture (`AuthModalContext`) supporting seamless switching between Login and Registration dialogs without page reloads.
 - **External Network Hub:** Curated directory of companion tools and projects integrated into navigation and footer.
 - **Performance & SEO:** Pre-configured `@vercel/speed-insights`, per-page canonical URLs and `noindex` directives on private pages (App Router `metadata` exports), OpenGraph social cards, and mobile-friendly touch targets.
+
+### 5. Stale Redirect Recovery (`/:path*`)
+
+- **Automatic Client Recovery (`/[...slug]/route.ts`):** Catches requests directed to the literal `/:path*` or `/%3Apath*` (resulting from stale HTTP 308 redirects cached in client browsers or service workers from prior configuration).
+- **Cache Eviction & Service Worker Unregister:** Issues HTTP 200 with `Clear-Site-Data: "cache"` and `Cache-Control: no-store, no-cache, must-revalidate, max-age=0` alongside an HTML payload that unregisters registered Service Workers, deletes `caches` (CacheStorage) entries, and triggers a clean client-side navigation (`window.location.replace('/?cache_cleared=...')`) back to `/`.
+- **Query Parameter Scrubbing:** `HomeContent.tsx` detects `?cache_cleared=` and strips it seamlessly using `window.history.replaceState` without triggering a reload. Non-matching dynamic paths fall back to standard `404 Not Found`.
 
 ---
 
@@ -183,6 +190,7 @@ The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
 │   │   ├── passwordchange/                 # Authenticated password update
 │   │   ├── confidentiality-rules/          # Privacy policy page
 │   │   ├── general-conditions/             # Terms and conditions page
+│   │   ├── [...slug]/                      # Catch-all recovery route for stale :path* redirects
 │   │   ├── layout.tsx                      # Root HTML shell & providers
 │   │   ├── sitemap.ts                      # Generated sitemap.xml (indexable pages only)
 │   │   ├── robots.ts                       # Generated robots.txt (blocks private areas)
