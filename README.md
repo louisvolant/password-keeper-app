@@ -330,6 +330,7 @@ MAILJET_SENDER_EMAIL=contact@securaised.net
 4. Useful Commands:
    ```bash
    npm run lint          # Run ESLint validation
+   npm audit             # Audit dependencies for known security vulnerabilities
    npm run test:e2e      # Run Playwright E2E test suite (register, login, secret links, logout)
    npm run test:e2e:ui   # Run Playwright with interactive UI mode
    npm run build:next    # Next.js production build & typecheck
