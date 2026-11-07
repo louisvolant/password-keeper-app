@@ -152,7 +152,7 @@ The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
 - **Language:** [TypeScript](https://www.typescriptlang.org/)
 - **Database & ODM:** [MongoDB Atlas](https://www.mongodb.com/atlas) with [Mongoose](https://mongoosejs.com/)
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/) & [daisyUI](https://daisyui.com/)
-- **Cryptography & Auth:** `argon2` (Argon2id), native Node.js `crypto`
+- **Cryptography & Auth:** [`argon2`](https://github.com/ranisalt/node-argon2) (Argon2id), native Node.js `crypto`
 - **Email Service:** `node-mailjet` (Mailjet v3.1 API)
 - **HTTP Client:** `axios`
 - **Identifier Generation:** [uuid](https://github.com/uuidjs/uuid)

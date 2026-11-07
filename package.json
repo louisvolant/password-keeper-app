@@ -19,7 +19,7 @@
   "dependencies": {
     "@opennextjs/cloudflare": "^1.20.16",
     "@vercel/speed-insights": "^2.1.0",
-    "argon2": "^0.41.1",
+    "argon2": "^0.45.2",
     "axios": "^1.21.0",
     "clsx": "^2.1.1",
     "lucide-react": "^1.70.0",
