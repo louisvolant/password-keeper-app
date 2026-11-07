@@ -155,6 +155,7 @@ The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
 - **Cryptography & Auth:** `argon2` (Argon2id), native Node.js `crypto`
 - **Email Service:** `node-mailjet` (Mailjet v3.1 API)
 - **HTTP Client:** `axios`
+- **Identifier Generation:** [uuid](https://github.com/uuidjs/uuid)
 - **Icons:** `lucide-react`
 - **Analytics & SEO:** `@vercel/speed-insights`, native App Router metadata routes (`sitemap.ts`, `robots.ts`) and per-page canonical/noindex metadata
 
