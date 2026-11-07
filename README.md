@@ -157,7 +157,7 @@ The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
 - **HTTP Client:** `axios`
 - **Identifier Generation:** [uuid](https://github.com/uuidjs/uuid)
 - **Icons:** [lucide-react](https://lucide.dev/)
-- **Analytics & SEO:** `@vercel/speed-insights`, native App Router metadata routes (`sitemap.ts`, `robots.ts`) and per-page canonical/noindex metadata
+- **Analytics & SEO:** [@vercel/speed-insights](https://vercel.com/docs/speed-insights), native App Router metadata routes (`sitemap.ts`, `robots.ts`) and per-page canonical/noindex metadata
 
 ---
 
