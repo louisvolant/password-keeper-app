@@ -13,6 +13,7 @@ A secure web application for sharing self-destructing ("burn after read") tempor
   - [3. Authentication & Account Management](#3-authentication--account-management)
   - [4. UI/UX & Responsive Experience](#4-uiux--responsive-experience)
   - [5. Stale Redirect Recovery (`/:path*`)](#5-stale-redirect-recovery-path)
+  - [6. Edge Caching & Performance Optimization](#6-edge-caching--performance-optimization)
 - [Security Architecture & Cryptography](#security-architecture--cryptography)
 - [Database Schema (MongoDB)](#database-schema-mongodb)
 - [Tech Stack](#tech-stack)
@@ -94,6 +95,13 @@ A secure web application for sharing self-destructing ("burn after read") tempor
 - **Automatic Client Recovery (`/[...slug]/route.ts`):** Catches requests directed to the literal `/:path*` or `/%3Apath*` (resulting from stale HTTP 308 redirects cached in client browsers or service workers from prior configuration).
 - **Cache Eviction & Service Worker Unregister:** Issues HTTP 200 with `Clear-Site-Data: "cache"` and `Cache-Control: no-store, no-cache, must-revalidate, max-age=0` alongside an HTML payload that unregisters registered Service Workers, deletes `caches` (CacheStorage) entries, and triggers a clean client-side navigation (`window.location.replace('/?cache_cleared=...')`) back to `/`.
 - **Query Parameter Scrubbing:** `HomeContent.tsx` detects `?cache_cleared=` and strips it seamlessly using `window.history.replaceState` without triggering a reload. Non-matching dynamic paths fall back to standard `404 Not Found`.
+
+### 6. Edge Caching & Performance Optimization
+
+- **Cloudflare Edge Cache Headers (`next.config.js`):** Public marketing pages, informational routes, and static metadata (`/`, `/confidentiality-rules`, `/general-conditions`, `/passwordlost`, `/temporarycontent`, `/robots.txt`, `/sitemap.xml`, `/manifest.webmanifest`) emit `CDN-Cache-Control` and `Cloudflare-CDN-Cache-Control` (`public, max-age=86400, stale-while-revalidate=3600`) along with `Cache-Control: public, max-age=0, s-maxage=86400, must-revalidate`.
+- **Worker Cold-Start Mitigation:** Serving public pages directly from Cloudflare Edge points of presence (PoPs) prevents crawler and bot traffic from waking up the Cloudflare Worker V8 isolate, significantly reducing Worker CPU execution consumption.
+- **OpenNext Cache Interception (`open-next.config.ts`):** `enableCacheInterception: true` enables lightweight routing layer interception for static prerendered assets before initializing the Next.js server runtime.
+- **Strict Anti-Caching on Sensitive API Routes:** Dynamic endpoints under `/api/*` explicitly enforce `no-store, no-cache, must-revalidate, max-age=0` to guarantee zero edge caching on credentials, vaults, and ephemeral secrets.
 
 ---
 

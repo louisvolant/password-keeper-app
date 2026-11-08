@@ -1,7 +1,9 @@
 import { defineCloudflareConfig } from "@opennextjs/cloudflare";
 
 const config = {
-  ...defineCloudflareConfig(),
+  ...defineCloudflareConfig({
+    enableCacheInterception: true,
+  }),
   buildCommand: "npm run build:next",
 };
 
