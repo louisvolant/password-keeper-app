@@ -100,8 +100,10 @@ A secure web application for sharing self-destructing ("burn after read") tempor
 
 - **Cloudflare Edge Cache Headers (`next.config.js`):** Public marketing pages, informational routes, and static metadata (`/`, `/confidentiality-rules`, `/general-conditions`, `/passwordlost`, `/temporarycontent`, `/robots.txt`, `/sitemap.xml`, `/manifest.webmanifest`) emit `CDN-Cache-Control` and `Cloudflare-CDN-Cache-Control` (`public, max-age=86400, stale-while-revalidate=3600`) along with `Cache-Control: public, max-age=0, s-maxage=86400, must-revalidate`.
 - **Worker Cold-Start Mitigation:** Serving public pages directly from Cloudflare Edge points of presence (PoPs) prevents crawler and bot traffic from waking up the Cloudflare Worker V8 isolate, significantly reducing Worker CPU execution consumption.
+- **Native Worker Edge Cache (`wrangler.jsonc`):** `"cache": { "enabled": true }` enables Cloudflare's tiered edge cache directly in front of the Worker entrypoint, serving fresh cacheable responses without executing the V8 isolate.
 - **OpenNext Cache Interception (`open-next.config.ts`):** `enableCacheInterception: true` enables lightweight routing layer interception for static prerendered assets before initializing the Next.js server runtime.
 - **Strict Anti-Caching on Sensitive API Routes:** Dynamic endpoints under `/api/*` explicitly enforce `no-store, no-cache, must-revalidate, max-age=0` to guarantee zero edge caching on credentials, vaults, and ephemeral secrets.
+
 
 ---
 

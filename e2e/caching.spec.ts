@@ -58,4 +58,14 @@ test.describe('Edge Caching Headers', () => {
     expect(headers['cdn-cache-control'], 'API CDN-Cache-Control').toBe('no-store');
     expect(headers['cloudflare-cdn-cache-control'], 'API Cloudflare-CDN-Cache-Control').toBe('no-store');
   });
+
+  test('wrangler configuration enables native Cloudflare Worker edge cache', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const wranglerConfig = JSON.parse(
+      fs.readFileSync(path.resolve(process.cwd(), 'wrangler.jsonc'), 'utf8')
+    );
+    expect(wranglerConfig.cache).toBeDefined();
+    expect(wranglerConfig.cache.enabled).toBe(true);
+  });
 });
