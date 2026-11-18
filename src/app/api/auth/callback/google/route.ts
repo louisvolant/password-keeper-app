@@ -57,7 +57,13 @@ export async function GET(request: NextRequest) {
 
     const frontendCallbackUrl = `${request.nextUrl.origin}/account`;
     const response = NextResponse.redirect(frontendCallbackUrl);
-    setSessionCookie(response, { id: userData.supabase_id, username: userData.username });
+    // Embed the user's password-rotation counter so the session is revoked
+    // automatically when the password next changes (see src/lib/auth.ts).
+    setSessionCookie(response, {
+      id: userData.supabase_id,
+      username: userData.username,
+      password_rotation: userData.password_rotation ?? 1,
+    });
     return response;
   } catch (error) {
     console.error('Google OAuth error:', error);

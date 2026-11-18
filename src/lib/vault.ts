@@ -86,8 +86,11 @@ export interface VaultAuthFailure {
 
 // Validate the session cookie and confirm the user still exists in MongoDB.
 // The returned userId is the only value ever used to build the R2 key.
-// Never throws: infrastructure failures are reported as 500 auth failures so
-// route handlers always answer JSON instead of crashing the Worker.
+// Sessions issued before the latest password rotation are rejected so a
+// stolen cookie cannot download the vault after the user rotates their
+// password. Never throws: infrastructure failures are reported as 500 auth
+// failures so route handlers always answer JSON instead of crashing the
+// Worker.
 export async function resolveVaultUser(
   request: NextRequest
 ): Promise<VaultAuthSuccess | VaultAuthFailure> {
@@ -103,9 +106,13 @@ export async function resolveVaultUser(
     const doc = await UsersModel.findOne({ supabase_id: session.id }).lean<{
       hasVault?: boolean;
       vaultLastSync?: Date | null;
+      password_rotation?: number;
     }>();
     if (!doc) {
       return { status: 401, error: 'Unauthorized - Unknown user' };
+    }
+    if (doc.password_rotation !== session.password_rotation) {
+      return { status: 401, error: 'Unauthorized - Session revoked' };
     }
     return {
       userId: session.id,

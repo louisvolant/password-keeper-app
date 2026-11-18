@@ -16,6 +16,7 @@ const PASSWORD_MINIMAL_LENGTH = 15;
 
 export default function PasswordChangeContent() {
   const router = useRouter();
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -42,7 +43,7 @@ export default function PasswordChangeContent() {
     }
 
     try {
-      const response = await changePassword(newPassword);
+      const response = await changePassword(currentPassword, newPassword);
       if (response.success) {
         setSuccess(true);
         setTimeout(() => router.push('/'), 2000); // Redirect to Home
@@ -72,6 +73,15 @@ export default function PasswordChangeContent() {
                 Change Password
               </h2>
               <form onSubmit={handleSubmit} className="space-y-4">
+                <Input
+                  type="password"
+                  id="current-password"
+                  placeholder="Current Password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  className="bg-white dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:border-gray-600"
+                  required
+                />
                 <Input
                   type="password"
                   placeholder="New Password (min 15 characters)"

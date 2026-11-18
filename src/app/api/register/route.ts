@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     });
 
     const response = NextResponse.json({ success: true });
-    setSessionCookie(response, { id: userId, username });
+    setSessionCookie(response, { id: userId, username, password_rotation: 1 });
     return response;
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';

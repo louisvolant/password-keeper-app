@@ -5,6 +5,12 @@ import crypto from 'crypto';
 export interface SessionUser {
   id: string;
   username: string;
+  // Password-rotation counter embedded in the cookie at issue time and
+  // compared against the user document on every authenticated request
+  // (see src/lib/auth.ts). Rotating the password revokes every session
+  // issued before the rotation. Undefined for pre-migration users whose
+  // documents carry no counter yet.
+  password_rotation?: number;
 }
 
 const COOKIE_NAME = 'session';

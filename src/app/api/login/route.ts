@@ -42,7 +42,13 @@ export async function POST(request: NextRequest) {
     }
 
     const response = NextResponse.json({ success: true });
-    setSessionCookie(response, { id: userData.supabase_id, username: userData.username });
+    // Embed the user's password-rotation counter so the session is revoked
+    // automatically when the password next changes (see src/lib/auth.ts).
+    setSessionCookie(response, {
+      id: userData.supabase_id,
+      username: userData.username,
+      password_rotation: userData.password_rotation ?? undefined,
+    });
     return response;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';

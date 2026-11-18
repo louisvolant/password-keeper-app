@@ -18,26 +18,31 @@ export default function AccountContent() {
   const [error, setError] = useState<string>('');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
 
   const handleAccountDeletion = async () => {
+    setDeletePassword('');
     setIsDeleteModalOpen(true);
   };
 
   const confirmAccountDeletion = async () => {
     setIsDeleting(true);
     try {
-      const response = await deleteMyAccount();
+      // Deletion is irreversible: the server requires the account password
+      // in addition to the session cookie.
+      const response = await deleteMyAccount(deletePassword);
       if (response.success) {
         router.push('/');
       } else {
         setError(response.error || 'Failed to delete account');
+        setIsDeleteModalOpen(false);
       }
     } catch (err) {
       console.error('Account deletion failed:', err);
       setError('An error occurred while deleting your account');
+      setIsDeleteModalOpen(false);
     } finally {
       setIsDeleting(false);
-      setIsDeleteModalOpen(false);
     }
   };
 
@@ -96,10 +101,20 @@ export default function AccountContent() {
             onClose={() => setIsDeleteModalOpen(false)}
             onConfirm={confirmAccountDeletion}
             title="Delete Account"
-            message="Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed."
+            message="Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently removed. Enter your account password to confirm."
             confirmText={isDeleting ? 'Deleting...' : 'Yes, Delete'}
             cancelText="No, Cancel"
-          />
+          >
+            <input
+              type="password"
+              id="delete-password"
+              placeholder="Account password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:border-gray-600"
+              required
+            />
+          </ConfirmationModal>
         </main>
       </ProtectedRoute>
     </ClientLayout>

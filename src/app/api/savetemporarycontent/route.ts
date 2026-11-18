@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { connectToDatabase } from '@/lib/db';
-import { getSession } from '@/lib/session';
+import { getAuthenticatedUser } from '@/lib/auth';
 import { TemporaryContentModel } from '@/lib/userDao';
 import { hashContentPassword } from '@/lib/password';
 import { sealTemporaryContent } from '@/lib/temporary_content_crypto';
@@ -17,7 +17,7 @@ const CONTENT_MAX_BYTES = 256 * 1024;
 const CONTENT_PASSWORD_MIN_LENGTH = 8;
 
 export async function POST(request: NextRequest) {
-  const user = await getSession(request);
+  const user = await getAuthenticatedUser(request);
   if (!user) {
     logger.info('Unauthorized access attempt to temporary content');
     return NextResponse.json({ success: false, error: 'Unauthorized - Please log in' }, { status: 401 });

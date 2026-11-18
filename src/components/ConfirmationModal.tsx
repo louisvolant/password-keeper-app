@@ -12,6 +12,8 @@ interface ConfirmationModalProps {
   message?: string;
   confirmText?: string;
   cancelText?: string;
+  /** Optional extra form controls (e.g. a password confirmation field). */
+  children?: React.ReactNode;
 }
 
 export function ConfirmationModal({
@@ -22,6 +24,7 @@ export function ConfirmationModal({
   message = "Are you sure you want to proceed?",
   confirmText = "Confirm",
   cancelText = "Cancel",
+  children,
 }: ConfirmationModalProps) {
   if (!isOpen) return null;
 
@@ -33,6 +36,7 @@ export function ConfirmationModal({
           <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
         </div>
         <p className="text-gray-600 mb-6">{message}</p>
+        {children && <div className="mb-6">{children}</div>}
         <div className="flex justify-end gap-3">
           <Button
             variant="outline"

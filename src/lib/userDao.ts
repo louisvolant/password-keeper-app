@@ -6,6 +6,11 @@ const usersSchema = new Schema({
   email: { type: String, required: true, unique: true },
   hashed_password: { type: String, required: true },
   password_version: { type: Number, default: 1 },
+  // Session revocation counter: incremented on every password change or
+  // reset. Session cookies embed the value at issue time and are rejected
+  // on mismatch, instantly revoking every session issued before the
+  // rotation (e.g. a cookie stolen from a shared computer).
+  password_rotation: { type: Number, default: 1 },
   hasVault: { type: Boolean, default: false },
   vaultLastSync: { type: Date, default: null },
   created_at: { type: Date, default: Date.now }

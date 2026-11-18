@@ -37,8 +37,14 @@ export const googleLogin = async () => {
   window.location.href = '/api/auth/google';
 };
 
-export const changePassword = async (newpassword: string) => {
-  const response = await api.post('/api/password/change', { newpassword }, { withCredentials: true });
+// Changing the password requires re-verifying the current password; the
+// server also rotates the session so other sessions are revoked.
+export const changePassword = async (currentpassword: string, newpassword: string) => {
+  const response = await api.post(
+    '/api/password/change',
+    { currentpassword, newpassword },
+    { withCredentials: true }
+  );
   return response.data;
 };
 
@@ -58,8 +64,14 @@ export const register = async (username: string, email: string, password: string
   return response.data;
 };
 
-export const deleteMyAccount = async () => {
-  const response = await api.post('/api/delete_my_account', null, { withCredentials: true });
+// Deleting the account is irreversible, so the server requires the current
+// account password in addition to a valid session.
+export const deleteMyAccount = async (currentpassword: string) => {
+  const response = await api.post(
+    '/api/delete_my_account',
+    { currentpassword },
+    { withCredentials: true }
+  );
   return response.data;
 };
 

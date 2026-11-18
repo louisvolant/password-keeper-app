@@ -68,17 +68,19 @@ A secure web application for sharing self-destructing ("burn after read") tempor
 - **Google OAuth 2.0 Integration:**
   - One-click Google Sign-In via `/api/auth/google` and `/api/auth/callback/google`.
   - Automatic account provisioning with unique generated usernames and Argon2-hashed passwords.
+  - OAuth-only users must first set a password through the email reset flow before using password-reconfirming operations (password change, account deletion).
 - **Session Security:**
   - Stateless, encrypted session cookies using AES-256-GCM with authentication tags (`session.ts`).
   - Signed, `HttpOnly`, `SameSite=Lax`, and `Secure` (in production) cookies with 24-hour expiration.
+  - **Rotation-based revocation:** every session cookie embeds the user's `password_rotation` counter; protected routes validate it against MongoDB, so changing or resetting a password instantly revokes every previously issued session (including cookies stolen from a shared computer).
   - Protected client routes via `<ProtectedRoute>` wrapper with automatic redirect to login modal.
 - **Password Reset Flow:**
   - Forgot password request (`/passwordlost`) generating cryptographically secure 32-byte tokens valid for 24 hours.
   - Transactional reset email delivery via **Mailjet API**.
   - Secure token verification and reset interface (`/passwordrenew?token=...`).
-  - In-app password change for authenticated users (`/passwordchange`).
+  - In-app password change for authenticated users (`/passwordchange`) — requires the current password and revokes all other sessions.
 - **Complete Account Deletion (GDPR-Compliant):**
-  - User-initiated one-click deletion modal with confirmation safeguards (`/account`).
+  - User-initiated deletion modal (`/account`) protected by a double safeguard: explicit confirmation **and** the account password, so a stolen session cookie cannot wipe user data.
   - Completely wipes user credentials, file tree, vault contents, and temporary links from MongoDB.
   - Clears active session cookies and redirects to the landing page.
 
@@ -113,7 +115,7 @@ A secure web application for sharing self-destructing ("burn after read") tempor
 |---|---|
 | **Vault Encryption** | Client-Side AES-256 (`crypto-js`). Plaintext never reaches the server. |
 | **Vault Key Storage** | Kept exclusively in transient React state. Never saved to disk or storage. |
-| **Session Tokens** | AES-256-GCM encrypted payload (`iv:tag:ciphertext`) stored in `HttpOnly` cookies. |
+| **Session Tokens** | AES-256-GCM encrypted payload (`iv:tag:ciphertext`) stored in `HttpOnly` cookies; embedded `password_rotation` counter validated against MongoDB revokes stolen sessions on password change/reset. |
 | **User Passwords** | Argon2id (`memoryCost: 65536`, `timeCost: 3`, `parallelism: 1`) on Node.js, PBKDF2-SHA256 (600k iterations, WebCrypto) fallback on Cloudflare Workers where native modules cannot load. |
 | **Temporary Links** | Server-side AES-256-GCM encryption at rest (`TEMPORARY_CONTENT_ENCRYPTION_KEY`, never shipped to the browser). Optional link passwords hashed and verified with Argon2id. |
 | **Reset Tokens** | 32-byte random hex tokens stored with 24-hour TTL in MongoDB. |
@@ -131,6 +133,7 @@ The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
    - `email`: Unique email address.
    - `hashed_password`: Argon2id or legacy salted SHA-256 hash.
    - `password_version`: Version marker (1 for Argon2id, 3 for PBKDF2-SHA256 on Workers).
+   - `password_rotation`: Session revocation counter incremented on every password change/reset; session cookies embed the value at issue time and are rejected on mismatch.
    - `hasVault`: Whether a `.kdbx` vault exists on R2 (set on first `PUT /api/vault`).
    - `vaultLastSync`: Timestamp of the last successful vault save.
    - `created_at`: Creation timestamp.
@@ -254,14 +257,14 @@ All endpoints are hosted same-origin under `/api/*`:
 | `POST` | `/api/login` | No | Authenticates credentials and sets encrypted session cookie. |
 | `POST` | `/api/logout` | Yes | Clears session cookie. |
 | `POST` | `/api/check-auth` | No | Verifies if current session cookie is valid. |
-| `POST` | `/api/delete_my_account` | Yes | Permanently removes user account and created temporary links. |
+| `POST` | `/api/delete_my_account` | Yes | Permanently removes user account and created temporary links (requires current password). |
 | `GET` | `/api/auth/google` | No | Redirects to Google OAuth 2.0 authorization page. |
 | `GET` | `/api/auth/callback/google` | No | Handles Google callback, logs in or auto-creates user, redirects to `/account`. |
 | `POST` | `/api/savetemporarycontent` | Yes | Creates an expiring secret link (`oneread` or `multipleread`); encrypts content server-side (256 KiB max). |
 | `GET` | `/api/gettemporarycontent` | No | Reads ephemeral content. Deletes if `oneread` or expired. |
 | `GET` | `/api/getusertemporarycontent` | Yes | Returns all active temporary links created by the authenticated user. |
 | `POST` | `/api/deleteusertemporarycontent`| Yes | Manually revokes and deletes a user's temporary link. |
-| `POST` | `/api/password/change` | Yes | Updates password for authenticated user. |
+| `POST` | `/api/password/change` | Yes | Updates password for authenticated user (requires current password; revokes all other sessions). |
 | `GET` | `/api/vault` | Yes | Downloads the user's `.kdbx` vault (`404` when never created). |
 | `PUT` | `/api/vault` | Yes | Creates/replaces the vault; honors `If-Match`, returns the new `ETag`. |
 | `HEAD` | `/api/vault` | Yes | Vault metadata only (KeeWeb revision checks). |
@@ -381,6 +384,7 @@ PLAYWRIGHT_TEST_BASE_URL=https://password-keeper-app.volantlouis.workers.dev npm
 
 A dedicated SEO suite (`e2e/seo.spec.ts`) verifies Search Console hygiene (canonical URLs, `noindex`, sitemap, robots, redirects).
 A dedicated PWA suite (`e2e/pwa.spec.ts`) validates Web App Manifest metadata, iOS icons, service worker accessibility, and verifies zero horizontal overflow on mobile viewports.
+A dedicated password-security suite (`e2e/password-security.spec.ts`) verifies re-authentication safeguards and session revocation: wrong-current-password rejection, revocation of pre-rotation (stolen) session cookies after a password change, and password-confirmed account deletion.
 
 ## Progressive Web App (PWA)
 

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
-import { getSession } from '@/lib/session';
+import { getAuthenticatedUser } from '@/lib/auth';
 import { TemporaryContentModel } from '@/lib/userDao';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
-  const user = await getSession(request);
+  const user = await getAuthenticatedUser(request);
   if (!user) {
     logger.info('Unauthorized access attempt to temporary content');
     return NextResponse.json({ success: false, error: 'Unauthorized - Please log in' }, { status: 401 });
