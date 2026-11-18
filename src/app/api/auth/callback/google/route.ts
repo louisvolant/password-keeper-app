@@ -5,19 +5,56 @@ import { connectToDatabase } from '@/lib/db';
 import { UsersModel } from '@/lib/userDao';
 import { hashPassword } from '@/lib/password';
 import { setSessionCookie } from '@/lib/session';
+import {
+  OAUTH_STATE_COOKIE_NAME,
+  parseOAuthSession,
+  safeEqual,
+} from '@/lib/google_oauth';
+import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
+// Clear the single-use OAuth state cookie on every response leaving the
+// callback, whatever the outcome.
+function withClearedStateCookie(response: NextResponse): NextResponse {
+  response.cookies.set(OAUTH_STATE_COOKIE_NAME, '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 0,
+    path: '/api/auth',
+  });
+  return response;
+}
+
+// Finish the Google OAuth 2.0 flow. Before anything is exchanged with
+// Google, the echoed `state` must match the single-use HttpOnly cookie set
+// at /api/auth/google; otherwise this is a CSRF / login-CSRF attempt or a
+// replayed callback and the request is rejected without any code exchange.
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code');
+  const state = request.nextUrl.searchParams.get('state');
+  const oauthSession = parseOAuthSession(request.cookies.get(OAUTH_STATE_COOKIE_NAME)?.value);
+
   if (!code) {
-    return NextResponse.json({ error: 'Missing authorization code' }, { status: 400 });
+    return withClearedStateCookie(
+      NextResponse.json({ error: 'Missing authorization code' }, { status: 400 })
+    );
+  }
+
+  if (!oauthSession || !state || !safeEqual(oauthSession.state, state)) {
+    logger.info('Google OAuth callback rejected: invalid state');
+    return withClearedStateCookie(
+      NextResponse.json({ error: 'Invalid OAuth state' }, { status: 403 })
+    );
   }
 
   try {
     await connectToDatabase();
     const redirectUri = `${request.nextUrl.origin}/api/auth/callback/google`;
 
+    // The code_verifier completes the PKCE proof: Google only releases
+    // tokens when it matches the S256 challenge from the authorize request.
     const tokenResponse = await axios.post(
       'https://oauth2.googleapis.com/token',
       {
@@ -26,6 +63,7 @@ export async function GET(request: NextRequest) {
         client_secret: process.env.GOOGLE_CLIENT_SECRET,
         redirect_uri: redirectUri,
         grant_type: 'authorization_code',
+        code_verifier: oauthSession.codeVerifier,
       }
     );
 
@@ -37,8 +75,15 @@ export async function GET(request: NextRequest) {
     );
 
     const { email } = userInfo.data;
+    if (!email || userInfo.data.verified_email === false) {
+      return withClearedStateCookie(
+        NextResponse.json({ error: 'Google account email is not verified' }, { status: 403 })
+      );
+    }
 
-    let userData = await UsersModel.findOne({ email: { $regex: new RegExp(`^${email}$`, 'i') } });
+    // Case-insensitive exact match via collation. Never build a RegExp
+    // from externally sourced input.
+    let userData = await UsersModel.findOne({ email }).collation({ locale: 'en', strength: 2 });
 
     if (!userData) {
       const randomStr = crypto.randomBytes(4).toString('hex');
@@ -64,9 +109,11 @@ export async function GET(request: NextRequest) {
       username: userData.username,
       password_rotation: userData.password_rotation ?? 1,
     });
-    return response;
+    return withClearedStateCookie(response);
   } catch (error) {
-    console.error('Google OAuth error:', error);
-    return NextResponse.json({ error: 'Authentication failed' }, { status: 500 });
+    logger.error('Google OAuth error:', { error });
+    return withClearedStateCookie(
+      NextResponse.json({ error: 'Authentication failed' }, { status: 500 })
+    );
   }
 }

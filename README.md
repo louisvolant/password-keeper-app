@@ -68,6 +68,7 @@ A secure web application for sharing self-destructing ("burn after read") tempor
 - **Google OAuth 2.0 Integration:**
   - One-click Google Sign-In via `/api/auth/google` and `/api/auth/callback/google`.
   - Automatic account provisioning with unique generated usernames and Argon2-hashed passwords.
+  - **CSRF-protected flow:** the authorization request carries a random `state` bound to a single-use `HttpOnly` cookie (scoped to `/api/auth`) and a PKCE S256 code challenge; the callback rejects mismatched or replayed state with `403` before exchanging anything with Google, and refuses unverified Google email addresses.
   - OAuth-only users must first set a password through the email reset flow before using password-reconfirming operations (password change, account deletion).
 - **Session Security:**
   - Stateless, encrypted session cookies using AES-256-GCM with authentication tags (`session.ts`).
@@ -119,6 +120,7 @@ A secure web application for sharing self-destructing ("burn after read") tempor
 | **User Passwords** | Argon2id (`memoryCost: 65536`, `timeCost: 3`, `parallelism: 1`) on Node.js, PBKDF2-SHA256 (600k iterations, WebCrypto) fallback on Cloudflare Workers where native modules cannot load. |
 | **Temporary Links** | Server-side AES-256-GCM encryption at rest (`TEMPORARY_CONTENT_ENCRYPTION_KEY`, never shipped to the browser). Optional link passwords hashed and verified with Argon2id. |
 | **Reset Tokens** | 32-byte random hex tokens stored with 24-hour TTL in MongoDB. |
+| **OAuth Sign-In** | Single-use `state` cookie binding (CSRF/login-CSRF protection), PKCE S256 code challenge, verified-email enforcement, no token exchange on state mismatch. |
 | **Database Access** | Parameterized queries with Mongoose ODM against MongoDB Atlas. |
 
 ---
@@ -258,8 +260,8 @@ All endpoints are hosted same-origin under `/api/*`:
 | `POST` | `/api/logout` | Yes | Clears session cookie. |
 | `POST` | `/api/check-auth` | No | Verifies if current session cookie is valid. |
 | `POST` | `/api/delete_my_account` | Yes | Permanently removes user account and created temporary links (requires current password). |
-| `GET` | `/api/auth/google` | No | Redirects to Google OAuth 2.0 authorization page. |
-| `GET` | `/api/auth/callback/google` | No | Handles Google callback, logs in or auto-creates user, redirects to `/account`. |
+| `GET` | `/api/auth/google` | No | Redirects to Google OAuth 2.0 authorization page with single-use state and PKCE S256 challenge. |
+| `GET` | `/api/auth/callback/google` | No | Validates state + PKCE, logs in or auto-creates user, redirects to `/account`. |
 | `POST` | `/api/savetemporarycontent` | Yes | Creates an expiring secret link (`oneread` or `multipleread`); encrypts content server-side (256 KiB max). |
 | `GET` | `/api/gettemporarycontent` | No | Reads ephemeral content. Deletes if `oneread` or expired. |
 | `GET` | `/api/getusertemporarycontent` | Yes | Returns all active temporary links created by the authenticated user. |
@@ -385,6 +387,7 @@ PLAYWRIGHT_TEST_BASE_URL=https://password-keeper-app.volantlouis.workers.dev npm
 A dedicated SEO suite (`e2e/seo.spec.ts`) verifies Search Console hygiene (canonical URLs, `noindex`, sitemap, robots, redirects).
 A dedicated PWA suite (`e2e/pwa.spec.ts`) validates Web App Manifest metadata, iOS icons, service worker accessibility, and verifies zero horizontal overflow on mobile viewports.
 A dedicated password-security suite (`e2e/password-security.spec.ts`) verifies re-authentication safeguards and session revocation: wrong-current-password rejection, revocation of pre-rotation (stolen) session cookies after a password change, and password-confirmed account deletion.
+A dedicated OAuth-security suite (`e2e/oauth-security.spec.ts`) verifies the authorization request carries a fresh single-use state and PKCE S256 challenge, and that the callback rejects mismatched, missing, or replayed state without issuing a session.
 
 ## Progressive Web App (PWA)
 
