@@ -1,50 +1,32 @@
-
 // src/lib/temporary_content_api.ts
+// Client API for ephemeral ("burn after read") shared secrets.
+//
+// Encryption happens server-side (see src/lib/temporary_content_crypto.ts):
+// this module only transports plaintext over the authenticated HTTPS session,
+// so no key material or crypto primitive is shipped to the browser.
+
 import axios from 'axios';
-import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 
 const api = axios.create({
   withCredentials: true
 });
 
-
-// Default key for encryption when no password is provided (should be stored securely in production)
-const DEFAULT_KEY = Buffer.from(process.env.AES_TEMPORARY_CONTENT_DEFAULT_KEY || '12345678901234567890123456789012', 'utf8'); // 32 bytes for AES-256
-
-// Encrypt content with AES-256-CBC
-const encryptAES = (content: string, password?: string | null): { iv: string; encrypted: string } => {
-  const key = password ? Buffer.from(password.padEnd(32, '0').slice(0, 32), 'utf8') : DEFAULT_KEY; // Pad/truncate to 32 bytes
-  const iv = randomBytes(16); // 16 bytes IV for AES-CBC
-  const cipher = createCipheriv('aes-256-cbc', key, iv);
-  let encrypted = cipher.update(content, 'utf8', 'hex');
-  encrypted += cipher.final('hex');
-  return { iv: iv.toString('hex'), encrypted };
-};
-
-// Decrypt content with AES-256-CBC
-const decryptAES = (encrypted: string, iv: string, password?: string | null): string => {
-  const key = password ? Buffer.from(password.padEnd(32, '0').slice(0, 32), 'utf8') : DEFAULT_KEY;
-  const decipher = createDecipheriv('aes-256-cbc', key, Buffer.from(iv, 'hex'));
-  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  return decrypted;
-};
+export interface SaveTemporaryContentInput {
+  strategy: 'oneread' | 'multipleread';
+  max_date: string;
+  password: string | null;
+  content: string;
+}
 
 export const saveTemporaryContent = async ({
   strategy,
   max_date,
   password,
-  encoded_content
-}: {
-  strategy: 'oneread' | 'multipleread';
-  max_date: string;
-  password: string | null;
-  encoded_content: string;
-}) => {
-  const { iv, encrypted } = encryptAES(encoded_content, password);
+  content
+}: SaveTemporaryContentInput) => {
   const response = await api.post(
     '/api/savetemporarycontent',
-    { strategy, max_date, password, iv, encoded_content: encrypted },
+    { strategy, max_date, password, content },
     { withCredentials: true }
   );
   return response.data;
@@ -78,17 +60,14 @@ export const deleteUserTemporaryContent = async (identifier: string) => {
   }
 };
 
+// Fetch a shared secret by public identifier. When the link is password
+// protected, the password must be supplied; the server verifies it against
+// its Argon2id/PBKDF2 hash before decrypting and returning the plaintext.
 export const getTemporaryContent = async (identifier: string, password?: string) => {
   try {
     const response = await api.get('/api/gettemporarycontent', {
       params: { identifier, password }
     });
-    if (response.data.success && response.data.content && response.data.iv) {
-      return {
-        success: true,
-        content: decryptAES(response.data.content, response.data.iv, password)
-      };
-    }
     return response.data;
   } catch (err) {
     if (axios.isAxiosError(err) && err.response) {

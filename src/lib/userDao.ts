@@ -23,8 +23,12 @@ const temporaryContentSchema = new Schema({
   identifier: { type: String, required: true, unique: true },
   hashed_password: { type: String },
   max_date: { type: Date, required: true },
-  encoded_content: { type: String, required: true },
+  // Server-sealed AES-256-GCM payload (see src/lib/temporary_content_crypto.ts).
+  // `auth_tag` also marks the storage generation: records created by the
+  // removed client-side encryption lack it and are purged as unreadable.
+  encrypted_content: { type: String, required: true },
   iv: { type: String, required: true },
+  auth_tag: { type: String, required: true },
   strategy: { type: String },
   created_at: { type: Date, default: Date.now }
 });

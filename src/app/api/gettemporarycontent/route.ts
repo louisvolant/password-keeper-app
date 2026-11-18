@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import { TemporaryContentModel } from '@/lib/userDao';
 import { verifyContentPassword } from '@/lib/password';
+import { openTemporaryContent } from '@/lib/temporary_content_crypto';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
@@ -40,18 +41,29 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const response = {
-      success: true,
-      content: content.encoded_content,
-      iv: content.iv
-    };
+    // Legacy records were encrypted client-side by a scheme whose key used to
+    // ship in the JS bundle and is now removed from the application: they can
+    // no longer be read. Purge them instead of keeping dead ciphertext.
+    if (!content.encrypted_content || !content.auth_tag || !content.iv) {
+      await TemporaryContentModel.deleteOne({ identifier });
+      logger.info('Unreadable legacy content purged:', { identifier });
+      return NextResponse.json({ success: false, error: 'Content has expired' }, { status: 410 });
+    }
+
+    // Decryption happens server-side; the recipient only ever receives
+    // plaintext over HTTPS, never any key material.
+    const plaintext = openTemporaryContent({
+      encryptedContent: content.encrypted_content,
+      iv: content.iv,
+      authTag: content.auth_tag,
+    });
 
     if (content.strategy === 'oneread') {
       await TemporaryContentModel.deleteOne({ identifier });
       logger.info('One-read content deleted after access:', { identifier });
     }
 
-    return NextResponse.json(response);
+    return NextResponse.json({ success: true, content: plaintext });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     const stack = err instanceof Error ? err.stack : undefined;

@@ -74,7 +74,7 @@ export default function TemporaryLinkContent() {
         strategy,
         max_date: maxDate.toISOString(),
         password: usePassword ? password : null,
-        encoded_content: content,
+        content,
       });
 
       if (response.success && response.identifier) {

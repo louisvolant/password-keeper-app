@@ -50,8 +50,8 @@ A secure web application for sharing self-destructing ("burn after read") tempor
   - **Burn After Read (`oneread`):** Content is permanently deleted from MongoDB immediately after the first successful retrieval.
   - **Multiple Reads (`multipleread`):** Content remains accessible until the specified expiration deadline.
 - **Configurable Expiration:** Choose lifespan intervals of **1 Hour**, **1 Day**, **1 Week**, or **1 Month**. Expired content is purged upon lookup or via deletion.
-- **Optional Password Protection:** Add an optional password (minimum 8 characters) to encrypt the content. Passwords are hashed with `Argon2id` on the server before verification.
-- **Dual-Layer Content Encryption:** Text is encrypted with AES-256-CBC using a per-secret random 16-byte initialization vector (IV) and a key derived from the password (or a fallback default key).
+- **Optional Password Protection:** Add an optional password (minimum 8 characters) to gate access to the content. Passwords are hashed with `Argon2id` on the server before verification.
+- **Server-Side Encryption at Rest:** Text is sealed with AES-256-GCM on the server (fresh random 96-bit IV and 128-bit auth tag per secret) under a key that never leaves the server environment (`TEMPORARY_CONTENT_ENCRYPTION_KEY`). MongoDB only ever stores authenticated ciphertext; no key material ships to the browser. Records from the removed client-side encryption generation are purged as unreadable on first access.
 - **Public Recipient Interface (`/securelinkview/[id]`):**
   - Standalone reader interface for external recipients.
   - Detects password-protected links and presents a clean decryption prompt.
@@ -115,7 +115,7 @@ A secure web application for sharing self-destructing ("burn after read") tempor
 | **Vault Key Storage** | Kept exclusively in transient React state. Never saved to disk or storage. |
 | **Session Tokens** | AES-256-GCM encrypted payload (`iv:tag:ciphertext`) stored in `HttpOnly` cookies. |
 | **User Passwords** | Argon2id (`memoryCost: 65536`, `timeCost: 3`, `parallelism: 1`) on Node.js, PBKDF2-SHA256 (600k iterations, WebCrypto) fallback on Cloudflare Workers where native modules cannot load. |
-| **Temporary Links** | AES-256-CBC with random 16-byte IV. Passwords verified with Argon2id. |
+| **Temporary Links** | Server-side AES-256-GCM encryption at rest (`TEMPORARY_CONTENT_ENCRYPTION_KEY`, never shipped to the browser). Optional link passwords hashed and verified with Argon2id. |
 | **Reset Tokens** | 32-byte random hex tokens stored with 24-hour TTL in MongoDB. |
 | **Database Access** | Parameterized queries with Mongoose ODM against MongoDB Atlas. |
 
@@ -140,8 +140,9 @@ The application utilizes 3 core collections defined in `src/lib/userDao.ts`:
    - `identifier`: Public UUID for access URL.
    - `hashed_password`: Optional Argon2id hash for password-protected links.
    - `max_date`: Expiration date.
-   - `encoded_content`: AES-256-CBC encrypted payload.
-   - `iv`: Initialization vector in hex format.
+   - `encrypted_content`: Server-sealed AES-256-GCM ciphertext (hex).
+   - `iv`: Random 96-bit GCM initialization vector (hex).
+   - `auth_tag`: 128-bit GCM authentication tag (hex); absent on legacy client-encrypted records, which are purged as unreadable on access.
    - `strategy`: `'oneread'` or `'multipleread'`.
    - `created_at`: Creation timestamp.
 
@@ -256,7 +257,7 @@ All endpoints are hosted same-origin under `/api/*`:
 | `POST` | `/api/delete_my_account` | Yes | Permanently removes user account and created temporary links. |
 | `GET` | `/api/auth/google` | No | Redirects to Google OAuth 2.0 authorization page. |
 | `GET` | `/api/auth/callback/google` | No | Handles Google callback, logs in or auto-creates user, redirects to `/account`. |
-| `POST` | `/api/savetemporarycontent` | Yes | Creates an expiring secret link (`oneread` or `multipleread`). |
+| `POST` | `/api/savetemporarycontent` | Yes | Creates an expiring secret link (`oneread` or `multipleread`); encrypts content server-side (256 KiB max). |
 | `GET` | `/api/gettemporarycontent` | No | Reads ephemeral content. Deletes if `oneread` or expired. |
 | `GET` | `/api/getusertemporarycontent` | Yes | Returns all active temporary links created by the authenticated user. |
 | `POST` | `/api/deleteusertemporarycontent`| Yes | Manually revokes and deletes a user's temporary link. |
@@ -287,8 +288,9 @@ MONGODB_ATLAS_CLUSTER_URL=your_cluster_url.mongodb.net
 MONGODB_ATLAS_DB_NAME=PasswordKeeperDB
 MONGODB_ATLAS_APP_NAME=Cluster0
 
-# Ephemeral Link Encryption (Recommended: 32-character string for AES-256)
-AES_TEMPORARY_CONTENT_DEFAULT_KEY=your_32_character_default_key!
+# Ephemeral Link Encryption (Required for temporary links)
+# Server-side AES-256-GCM key. Generate with: openssl rand -hex 32
+TEMPORARY_CONTENT_ENCRYPTION_KEY=your_64_hex_char_random_key_here
 
 # Google OAuth 2.0 (Optional, callback is dynamically detected)
 GOOGLE_CLIENT_ID=your_google_client_id.apps.googleusercontent.com
@@ -362,8 +364,10 @@ The test suite covers the complete user lifecycle:
 3. **User Login:** Authenticates using created credentials and verifies session cookie.
 4. **Create Ephemeral Link:** Stores encrypted temporary content and verifies generated share link.
 5. **Decrypt & Read Secret:** Opens the secret URL in a separate browser context and verifies decrypted payload.
-6. **Delete Ephemeral Link:** Deletes the temporary secret and confirms removal from the user link list.
-7. **Final Logout:** Ensures user is completely logged out and protected routes are inaccessible.
+6. **Burn-After-Read:** Creates a one-read link, verifies the first recipient reads it, and the second recipient finds it permanently gone.
+7. **Password-Protected Link:** Verifies the recipient is prompted for the link password, that a wrong password is rejected, and that the correct password reveals the secret.
+8. **Delete Ephemeral Link:** Deletes the temporary secret and confirms removal from the user link list.
+9. **Final Logout:** Ensures user is completely logged out and protected routes are inaccessible.
 
 Run the test suite locally (automatically launches local dev server):
 ```bash

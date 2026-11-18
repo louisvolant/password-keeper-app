@@ -151,7 +151,89 @@ test.describe.serial('E2E User Flow: Register, Login, Ephemeral Link & Logout', 
     await recipientContext.close();
   });
 
-  test('6. Delete the created temporary secret URL', async () => {
+  test('6. Burn-after-read content is deleted after its first read', async ({ browser }) => {
+    const burnPayload = `Burn after read token: ${timestamp}-${Math.random().toString(36).substring(2)}`;
+    await page.goto('/temporarycontent');
+    await expect(page.getByRole('heading', { name: 'Create Temporary Content' })).toBeVisible();
+
+    // Switch the access strategy toggle to "Burn After Read" (oneread)
+    const strategyToggle = page.locator('input.toggle');
+    await strategyToggle.check();
+
+    const contentTextarea = page.locator('textarea#content');
+    await contentTextarea.fill(burnPayload);
+
+    const [saveResponse] = await Promise.all([
+      page.waitForResponse((res) => res.url().includes('/api/savetemporarycontent') && res.request().method() === 'POST'),
+      page.getByRole('button', { name: 'Save Temporary Content' }).click(),
+    ]);
+
+    expect(saveResponse.status()).toBe(200);
+    const saveData = await saveResponse.json();
+    expect(saveData.success).toBe(true);
+    const burnLinkUrl = await page.locator('.alert-success a').innerText();
+
+    // First recipient reads the secret successfully
+    const recipientContext = await browser.newContext();
+    const recipientPage = await recipientContext.newPage();
+    await recipientPage.goto(burnLinkUrl);
+    await expect(recipientPage.locator('textarea')).toHaveValue(burnPayload, { timeout: 15000 });
+    await recipientContext.close();
+
+    // Second recipient must find the content permanently gone
+    const secondContext = await browser.newContext();
+    const secondPage = await secondContext.newPage();
+    await secondPage.goto(burnLinkUrl);
+    await expect(secondPage.locator('.alert-error')).toBeVisible({ timeout: 15000 });
+    await expect(secondPage.locator('.alert-error')).toContainText('Content not found or expired');
+    await secondContext.close();
+  });
+
+  test('7. Password-protected content requires the correct link password', async ({ browser }) => {
+    const protectedPayload = `Protected token: ${timestamp}-${Math.random().toString(36).substring(2)}`;
+    const linkPassword = 'link-password-123';
+    await page.goto('/temporarycontent');
+    await expect(page.getByRole('heading', { name: 'Create Temporary Content' })).toBeVisible();
+
+    // Enable "Protect with Password" and set the link password
+    await page.locator('input.checkbox').check();
+    const passwordInput = page.locator('input#password');
+    await expect(passwordInput).toBeVisible();
+    await passwordInput.fill(linkPassword);
+
+    const contentTextarea = page.locator('textarea#content');
+    await contentTextarea.fill(protectedPayload);
+
+    const [saveResponse] = await Promise.all([
+      page.waitForResponse((res) => res.url().includes('/api/savetemporarycontent') && res.request().method() === 'POST'),
+      page.getByRole('button', { name: 'Save Temporary Content' }).click(),
+    ]);
+
+    expect(saveResponse.status()).toBe(200);
+    const saveData = await saveResponse.json();
+    expect(saveData.success).toBe(true);
+    const protectedLinkUrl = await page.locator('.alert-success a').innerText();
+
+    // Recipient gets a password prompt, not the content
+    const recipientContext = await browser.newContext();
+    const recipientPage = await recipientContext.newPage();
+    await recipientPage.goto(protectedLinkUrl);
+    await expect(recipientPage.getByLabel('Enter Password')).toBeVisible({ timeout: 15000 });
+
+    // Wrong password is rejected without disclosing the content
+    await recipientPage.locator('#password').fill('wrong-password');
+    await recipientPage.getByRole('button', { name: 'Submit' }).click();
+    await expect(recipientPage.locator('.alert-error')).toBeVisible({ timeout: 15000 });
+    await expect(recipientPage.locator('.alert-error')).toContainText('Invalid password');
+
+    // Correct password reveals the secret
+    await recipientPage.locator('#password').fill(linkPassword);
+    await recipientPage.getByRole('button', { name: 'Submit' }).click();
+    await expect(recipientPage.locator('textarea')).toHaveValue(protectedPayload, { timeout: 15000 });
+    await recipientContext.close();
+  });
+
+  test('8. Delete the created temporary secret URL', async () => {
     await page.goto('/temporarycontent');
     await expect(page.getByRole('heading', { name: 'Your Temporary Links' })).toBeVisible();
 
@@ -173,7 +255,7 @@ test.describe.serial('E2E User Flow: Register, Login, Ephemeral Link & Logout', 
     await expect(page.locator('table tbody tr', { hasText: createdIdentifier })).not.toBeVisible();
   });
 
-  test('7. Log out from the application (Déconnexion)', async () => {
+  test('9. Log out from the application (Déconnexion)', async () => {
     // Click Logout from the header
     const logoutBtn = page.getByRole('button', { name: 'Logout' });
     await expect(logoutBtn).toBeVisible();
