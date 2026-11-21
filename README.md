@@ -90,7 +90,7 @@ A secure web application for sharing self-destructing ("burn after read") tempor
 - **Theme Engine:** Fully integrated Light and Dark mode toggle with `localStorage` persistence and automatic fallback to `prefers-color-scheme`.
 - **Responsive Layout:** Adaptive desktop navigation bar and mobile drawer sidebar (`Navbar.tsx` and `Header.tsx`).
 - **Modal System:** Context-driven modal architecture (`AuthModalContext`) supporting seamless switching between Login and Registration dialogs without page reloads.
-- **External Network Hub:** Curated directory of companion tools and projects integrated into navigation and footer.
+- **External Network Hub & Author Links:** Curated directory of companion tools and projects integrated into navigation and footer, paired with a dedicated author bar linking to the Personal Page (`louisvolant.com`) and Portfolio (`louisvolant.com/portfolio`).
 - **Performance & SEO:** Pre-configured `@vercel/speed-insights`, per-page canonical URLs and `noindex` directives on private pages (App Router `metadata` exports), OpenGraph social cards, and mobile-friendly touch targets.
 
 ### 5. Stale Redirect Recovery (`/:path*`)

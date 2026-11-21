@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { internalLinks, externalLinks } from "./links";
+import { internalLinks, personalLinks, externalLinks } from "./links";
 
 interface NavbarProps {
   isOpen: boolean;
@@ -52,16 +52,18 @@ export default function Navbar({ isOpen, toggleSidebar }: NavbarProps) {
           {/* Horizontal ruler */}
           <hr className="border-gray-300 dark:border-gray-500 my-4" />
 
-          {/* External links */}
-          {externalLinks.map((link) => (
-            <Link
+          {/* Personal & External links */}
+          {[...personalLinks, ...externalLinks].map((link) => (
+            <a
               key={link.href}
               href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
               onClick={toggleSidebar}
               className="hover:text-blue-600 dark:hover:text-blue-300"
             >
               {link.label}
-            </Link>
+            </a>
           ))}
         </div>
 

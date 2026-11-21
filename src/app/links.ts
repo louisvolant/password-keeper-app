@@ -10,8 +10,12 @@ export const internalLinks: LinkItem[] = [
   { label: 'General Conditions', href: '/general-conditions' },
 ];
 
-export const externalLinks: LinkItem[] = [
+export const personalLinks: LinkItem[] = [
   { label: 'Personal Page', href: 'https://www.louisvolant.com' },
+  { label: 'Portfolio', href: 'https://www.louisvolant.com/portfolio' },
+];
+
+export const externalLinks: LinkItem[] = [
   { label: 'MP3 Tool', href: 'https://mp3-tool.louisvolant.com' },
   { label: 'Skipass Checker', href: 'https://skipass-earlybird-checker.louisvolant.com' },
   { label: 'Sun Over The Cloud', href: 'https://sunoverthe.cloud' },
