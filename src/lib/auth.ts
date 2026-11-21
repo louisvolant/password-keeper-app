@@ -31,6 +31,19 @@ interface UserDoc {
   password_rotation?: number;
 }
 
+/**
+ * Compare the persisted user password-rotation counter against the session cookie.
+ * Normalizes pre-migration missing counters (`undefined`) consistently so legacy
+ * users remain authenticated until their next rotation while any `$inc` revokes
+ * prior cookies.
+ */
+export function isSessionRotationValid(
+  dbRotation: number | undefined,
+  sessionRotation: number | undefined
+): boolean {
+  return (dbRotation ?? 0) === (sessionRotation ?? 0);
+}
+
 export async function getAuthenticatedUser(request?: NextRequest): Promise<AuthenticatedUser | null> {
   const session = await getSession(request);
   if (!session) {
@@ -43,10 +56,7 @@ export async function getAuthenticatedUser(request?: NextRequest): Promise<Authe
     return null;
   }
 
-  // Reject sessions issued before the latest password rotation. Both sides
-  // are undefined for pre-migration users, keeping them logged in until
-  // they next rotate their password.
-  if (user.password_rotation !== session.password_rotation) {
+  if (!isSessionRotationValid(user.password_rotation, session.password_rotation)) {
     return null;
   }
 

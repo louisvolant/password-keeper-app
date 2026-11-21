@@ -4,6 +4,7 @@ import {
   OAUTH_STATE_COOKIE_NAME,
   codeChallengeS256,
   generateOAuthSession,
+  oauthStateCookieOptions,
   serializeOAuthSession,
 } from '@/lib/google_oauth';
 
@@ -36,12 +37,10 @@ export async function GET(request: NextRequest) {
   const url = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 
   const response = NextResponse.redirect(url);
-  response.cookies.set(OAUTH_STATE_COOKIE_NAME, serializeOAuthSession(oauthSession), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: OAUTH_STATE_COOKIE_MAX_AGE,
-    path: '/api/auth',
-  });
+  response.cookies.set(
+    OAUTH_STATE_COOKIE_NAME,
+    serializeOAuthSession(oauthSession),
+    oauthStateCookieOptions(request, OAUTH_STATE_COOKIE_MAX_AGE)
+  );
   return response;
 }

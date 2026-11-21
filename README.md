@@ -67,8 +67,9 @@ A secure web application for sharing self-destructing ("burn after read") tempor
   - Backward compatibility support for SHA-256 salted hashes.
 - **Google OAuth 2.0 Integration:**
   - One-click Google Sign-In via `/api/auth/google` and `/api/auth/callback/google`.
-  - Automatic account provisioning with unique generated usernames and Argon2-hashed passwords.
+  - Automatic account provisioning with unique generated usernames and Argon2-hashed passwords; queries existing accounts with `.lean()` so pre-migration records without `password_rotation` stay compatible with session verification.
   - **CSRF-protected flow:** the authorization request carries a random `state` bound to a single-use `HttpOnly` cookie (scoped to `/api/auth`) and a PKCE S256 code challenge; the callback rejects mismatched or replayed state with `403` before exchanging anything with Google, and refuses unverified Google email addresses.
+  - Note: Google Cloud Console must authorize `<origin>/api/auth/callback/google` for both production (`https://www.securaised.net/api/auth/callback/google`) and local dev (`http://localhost:3000/api/auth/callback/google`).
   - OAuth-only users must first set a password through the email reset flow before using password-reconfirming operations (password change, account deletion).
 - **Session Security:**
   - Stateless, encrypted session cookies using AES-256-GCM with authentication tags (`session.ts`).

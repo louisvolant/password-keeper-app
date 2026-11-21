@@ -7,6 +7,14 @@ import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
+interface LoginUserDoc {
+  supabase_id: string;
+  username: string;
+  hashed_password: string;
+  password_version?: number;
+  password_rotation?: number;
+}
+
 export async function POST(request: NextRequest) {
   try {
     await connectToDatabase();
@@ -20,12 +28,13 @@ export async function POST(request: NextRequest) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const isEmail = emailRegex.test(username);
 
-    let userData;
-    if (isEmail) {
-      userData = await UsersModel.findOne({ email: { $regex: new RegExp(`^${username}$`, 'i') } });
-    } else {
-      userData = await UsersModel.findOne({ username: { $regex: new RegExp(`^${username}$`, 'i') } });
-    }
+    // Use `.lean()` so pre-migration accounts without a persisted `password_rotation`
+    // keep `undefined` rather than getting schema `default: 1` hydrated in memory,
+    // matching `getAuthenticatedUser()` in src/lib/auth.ts.
+    const filter = isEmail
+      ? { email: { $regex: new RegExp(`^${username}$`, 'i') } }
+      : { username: { $regex: new RegExp(`^${username}$`, 'i') } };
+    const userData = await UsersModel.findOne(filter).lean<LoginUserDoc>();
 
     if (!userData) {
       return NextResponse.json({ success: false, error: 'Invalid credentials' }, { status: 401 });

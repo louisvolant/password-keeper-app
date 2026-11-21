@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { connectToDatabase } from '@/lib/db';
+import { isSessionRotationValid } from '@/lib/auth';
 import { getSession } from '@/lib/session';
 import { UsersModel } from '@/lib/userDao';
 import { logger } from '@/lib/logger';
@@ -111,7 +112,7 @@ export async function resolveVaultUser(
     if (!doc) {
       return { status: 401, error: 'Unauthorized - Unknown user' };
     }
-    if (doc.password_rotation !== session.password_rotation) {
+    if (!isSessionRotationValid(doc.password_rotation, session.password_rotation)) {
       return { status: 401, error: 'Unauthorized - Session revoked' };
     }
     return {

@@ -9,22 +9,16 @@ import {
   OAUTH_STATE_COOKIE_NAME,
   parseOAuthSession,
   safeEqual,
+  withClearedOAuthStateCookie,
 } from '@/lib/google_oauth';
 import { logger } from '@/lib/logger';
 
 export const runtime = 'nodejs';
 
-// Clear the single-use OAuth state cookie on every response leaving the
-// callback, whatever the outcome.
-function withClearedStateCookie(response: NextResponse): NextResponse {
-  response.cookies.set(OAUTH_STATE_COOKIE_NAME, '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 0,
-    path: '/api/auth',
-  });
-  return response;
+interface GoogleUserDoc {
+  supabase_id: string;
+  username: string;
+  password_rotation?: number;
 }
 
 // Finish the Google OAuth 2.0 flow. Before anything is exchanged with
@@ -37,14 +31,16 @@ export async function GET(request: NextRequest) {
   const oauthSession = parseOAuthSession(request.cookies.get(OAUTH_STATE_COOKIE_NAME)?.value);
 
   if (!code) {
-    return withClearedStateCookie(
+    return withClearedOAuthStateCookie(
+      request,
       NextResponse.json({ error: 'Missing authorization code' }, { status: 400 })
     );
   }
 
   if (!oauthSession || !state || !safeEqual(oauthSession.state, state)) {
     logger.info('Google OAuth callback rejected: invalid state');
-    return withClearedStateCookie(
+    return withClearedOAuthStateCookie(
+      request,
       NextResponse.json({ error: 'Invalid OAuth state' }, { status: 403 })
     );
   }
@@ -55,16 +51,18 @@ export async function GET(request: NextRequest) {
 
     // The code_verifier completes the PKCE proof: Google only releases
     // tokens when it matches the S256 challenge from the authorize request.
+    const tokenParams = new URLSearchParams({
+      code,
+      client_id: process.env.GOOGLE_CLIENT_ID ?? '',
+      client_secret: process.env.GOOGLE_CLIENT_SECRET ?? '',
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code',
+      code_verifier: oauthSession.codeVerifier,
+    });
     const tokenResponse = await axios.post(
       'https://oauth2.googleapis.com/token',
-      {
-        code,
-        client_id: process.env.GOOGLE_CLIENT_ID,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: redirectUri,
-        grant_type: 'authorization_code',
-        code_verifier: oauthSession.codeVerifier,
-      }
+      tokenParams.toString(),
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
     );
 
     const { access_token } = tokenResponse.data;
@@ -76,14 +74,18 @@ export async function GET(request: NextRequest) {
 
     const { email } = userInfo.data;
     if (!email || userInfo.data.verified_email === false) {
-      return withClearedStateCookie(
+      return withClearedOAuthStateCookie(
+        request,
         NextResponse.json({ error: 'Google account email is not verified' }, { status: 403 })
       );
     }
 
-    // Case-insensitive exact match via collation. Never build a RegExp
-    // from externally sourced input.
-    let userData = await UsersModel.findOne({ email }).collation({ locale: 'en', strength: 2 });
+    // Use `.lean()` so pre-migration accounts without a persisted `password_rotation`
+    // keep `undefined` rather than getting schema `default: 1` hydrated in memory,
+    // matching `getAuthenticatedUser()` in src/lib/auth.ts.
+    let userData = await UsersModel.findOne({ email })
+      .collation({ locale: 'en', strength: 2 })
+      .lean<GoogleUserDoc>();
 
     if (!userData) {
       const randomStr = crypto.randomBytes(4).toString('hex');
@@ -91,28 +93,36 @@ export async function GET(request: NextRequest) {
       const password = crypto.randomBytes(32).toString('hex');
       const { hash: hashedPassword, version: passwordVersion } = await hashPassword(password);
 
-      userData = await UsersModel.create({
+      const createdUser = await UsersModel.create({
         email,
         username,
         hashed_password: hashedPassword,
         password_version: passwordVersion,
         supabase_id: crypto.randomUUID(),
       });
+      userData = {
+        supabase_id: createdUser.supabase_id,
+        username: createdUser.username,
+        password_rotation: createdUser.password_rotation,
+      };
     }
 
     const frontendCallbackUrl = `${request.nextUrl.origin}/account`;
     const response = NextResponse.redirect(frontendCallbackUrl);
-    // Embed the user's password-rotation counter so the session is revoked
-    // automatically when the password next changes (see src/lib/auth.ts).
+    // Embed the persisted password-rotation counter (without overriding missing
+    // pre-migration values) so sessions match auth.ts and still revoke on rotation.
     setSessionCookie(response, {
       id: userData.supabase_id,
       username: userData.username,
-      password_rotation: userData.password_rotation ?? 1,
+      password_rotation: userData.password_rotation ?? undefined,
     });
-    return withClearedStateCookie(response);
+    return withClearedOAuthStateCookie(request, response);
   } catch (error) {
-    logger.error('Google OAuth error:', { error });
-    return withClearedStateCookie(
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    const responseData = axios.isAxiosError(error) ? error.response?.data : undefined;
+    logger.error('Google OAuth error:', { message, responseData });
+    return withClearedOAuthStateCookie(
+      request,
       NextResponse.json({ error: 'Authentication failed' }, { status: 500 })
     );
   }

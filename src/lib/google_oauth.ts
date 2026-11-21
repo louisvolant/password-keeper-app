@@ -12,11 +12,35 @@
 // or a misconfigured redirect.
 
 import crypto from 'crypto';
+import type { NextRequest, NextResponse } from 'next/server';
 
 // Single-use cookie binding an authorization request to the browser that
 // initiated it. Scoped to /api/auth so it is never sent to other routes.
 export const OAUTH_STATE_COOKIE_NAME = 'google_oauth_state';
 export const OAUTH_STATE_COOKIE_MAX_AGE = 600; // seconds (10 minutes)
+
+/** Build cookie attributes consistent across state issuance and clearing. */
+export function oauthStateCookieOptions(request: NextRequest, maxAge: number) {
+  const isHttps =
+    request.nextUrl.protocol === 'https:' ||
+    request.headers.get('x-forwarded-proto') === 'https';
+  return {
+    httpOnly: true,
+    secure: isHttps,
+    sameSite: 'lax' as const,
+    maxAge,
+    path: '/api/auth',
+  };
+}
+
+/** Clear the single-use OAuth state cookie on responses leaving the callback. */
+export function withClearedOAuthStateCookie(
+  request: NextRequest,
+  response: NextResponse
+): NextResponse {
+  response.cookies.set(OAUTH_STATE_COOKIE_NAME, '', oauthStateCookieOptions(request, 0));
+  return response;
+}
 
 export interface OAuthSession {
   state: string;

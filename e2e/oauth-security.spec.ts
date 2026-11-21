@@ -1,8 +1,10 @@
 // e2e/oauth-security.spec.ts
 // Verifies the Google OAuth authorization request carries CSRF protections
-// (single-use state cookie + PKCE S256) and that the callback rejects
-// mismatched or missing state before exchanging anything with Google.
+// (single-use state cookie + PKCE S256), that the callback rejects mismatched
+// or missing state before exchanging anything with Google, and that
+// session-rotation checks remain compatible with pre-migration accounts.
 import { test, expect } from '@playwright/test';
+import { isSessionRotationValid } from '../src/lib/auth';
 
 test.describe('Google OAuth state & PKCE hardening', () => {
   test('authorization redirect includes state and S256 code challenge', async ({ request }) => {
@@ -72,5 +74,13 @@ test.describe('Google OAuth state & PKCE hardening', () => {
   test('callback without an authorization code is rejected', async ({ request }) => {
     const callback = await request.get('/api/auth/callback/google', { maxRedirects: 0 });
     expect(callback.status()).toBe(400);
+  });
+
+  test('session rotation helper accepts pre-migration users and rejects stale sessions', async () => {
+    expect(isSessionRotationValid(undefined, undefined)).toBe(true);
+    expect(isSessionRotationValid(1, 1)).toBe(true);
+    expect(isSessionRotationValid(1, undefined)).toBe(false);
+    expect(isSessionRotationValid(undefined, 1)).toBe(false);
+    expect(isSessionRotationValid(2, 1)).toBe(false);
   });
 });
